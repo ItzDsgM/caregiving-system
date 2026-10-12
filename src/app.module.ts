@@ -11,12 +11,14 @@ import { CaregiverDocument } from './caregiver-profiles/entities/caregiver-docum
 import { JobOffer } from './job-offers/entities/job-offer.entity';
 import { Application } from './applications/entities/application.entity';
 import { ContactRequest } from './contact-requests/entities/contact-request.entity';
+import { Review } from './reviews/entities/review.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CaregiversModule } from './caregivers/caregivers.module';
 import { JobOffersModule } from './job-offers/job-offers.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { ContactRequestsModule } from './contact-requests/contact-requests.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { NotificationListener } from './common/listeners/notification.listener';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -45,6 +47,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
           JobOffer,
           Application,
           ContactRequest,
+          Review,
         ],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
@@ -71,6 +74,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     JobOffersModule,
     ApplicationsModule,
     ContactRequestsModule,
+    ReviewsModule,
   ],
   controllers: [],
   providers: [
