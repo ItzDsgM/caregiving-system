@@ -269,4 +269,143 @@ describe('JobOffersService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('date rules (RF03.1.2)', () => {
+    const isoDay = (offsetDays: number) => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + offsetDays);
+      return d.toISOString().split('T')[0];
+    };
+
+    const baseDto = (): CreateJobOfferDto => ({
+      title: 'Care needed for elderly grandmother',
+      description: 'Looking for a kind and certified caregiver to help daily.',
+      careType: CareSpecialty.ELDERLY_CARE,
+      locationCity: 'Bogota',
+      locationZone: 'Chapinero',
+      startDate: isoDay(1),
+      endDate: isoDay(10),
+      requiredSchedule: [{ day: DayOfWeek.MONDAY, shifts: [ShiftType.MORNING] }],
+      budgetMin: 10,
+      budgetMax: 20,
+    });
+
+    beforeEach(() => {
+      (repository.create as jest.Mock).mockImplementation((d) => d);
+      (repository.save as jest.Mock).mockImplementation(async (d) => d);
+    });
+
+    it('should reject a startDate in the past', async () => {
+      await expect(
+        service.create('client-uuid-1', { ...baseDto(), startDate: isoDay(-3), endDate: isoDay(5) }),
+      ).rejects.toThrow('startDate must be today or a future date');
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('should accept a startDate equal to today', async () => {
+      await expect(
+        service.create('client-uuid-1', { ...baseDto(), startDate: isoDay(0), endDate: isoDay(5) }),
+      ).resolves.toBeDefined();
+    });
+
+    it('should reject malformed dates', async () => {
+      await expect(
+        service.create('client-uuid-1', { ...baseDto(), startDate: 'garbage' }),
+      ).rejects.toThrow('Invalid date format');
+    });
+
+    it('should reject moving startDate to the past on update', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue({ ...mockJobOffer });
+
+      await expect(
+        service.update('client-uuid-1', 'offer-uuid-1', { startDate: isoDay(-1), endDate: isoDay(4) }),
+      ).rejects.toThrow('startDate must be today or a future date');
+    });
+
+    it('should let a client extend endDate even if the original startDate already passed', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue({
+        ...mockJobOffer,
+        startDate: isoDay(-5),
+        endDate: isoDay(1),
+      });
+
+      await expect(
+        service.update('client-uuid-1', 'offer-uuid-1', { endDate: isoDay(20) }),
+      ).resolves.toBeDefined();
+    });
+
+    it('should reject an update whose endDate is before the existing startDate', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue({
+        ...mockJobOffer,
+        startDate: isoDay(5),
+        endDate: isoDay(10),
+      });
+
+      await expect(
+        service.update('client-uuid-1', 'offer-uuid-1', { endDate: isoDay(2) }),
+      ).rejects.toThrow('endDate must be greater than or equal to startDate');
+    });
+
+    it('should validate the merged budget range on update', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue({
+        ...mockJobOffer,
+        budgetMin: 30,
+        budgetMax: 50,
+      });
+
+      await expect(
+        service.update('client-uuid-1', 'offer-uuid-1', { budgetMax: 10 }),
+      ).rejects.toThrow('budgetMax must be greater than or equal to budgetMin');
+    });
+  });
+
+  describe('findPublicOffers - filters', () => {
+    it('should apply every optional filter plus OPEN-only base condition (RF04.2)', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      (repository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await service.findPublicOffers({
+        city: 'Cali',
+        careType: CareSpecialty.CHILD_CARE,
+        minBudget: 10,
+        maxBudget: 90,
+        page: 2,
+        limit: 5,
+      });
+
+      expect(qb.where).toHaveBeenCalledWith('jobOffer.status = :status', {
+        status: JobOfferStatus.OPEN,
+      });
+      expect(qb.andWhere).toHaveBeenCalledTimes(4);
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(result.meta).toMatchObject({ totalItems: 0, totalPages: 1, currentPage: 2 });
+    });
+
+    it('should use default pagination when none is supplied', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockJobOffer], 1]),
+      };
+      (repository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await service.findPublicOffers({});
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(result.meta.itemCount).toBe(1);
+    });
+  });
 });

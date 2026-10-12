@@ -313,4 +313,42 @@ describe('AdminService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('reactivation ripple effects', () => {
+    it('should make a reactivated caregiver visible in search again (isPublic = true)', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        ...mockCaregiverUser,
+        isActive: false,
+        suspensionReason: 'Resolved',
+      });
+
+      await service.updateUserStatus('caregiver-uuid-1', { isActive: true });
+
+      expect(profileRepo.update).toHaveBeenCalledWith(
+        { userId: 'caregiver-uuid-1' },
+        { isPublic: true },
+      );
+    });
+
+    it('should not touch caregiver profiles when reactivating a client', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        ...mockClientUser,
+        isActive: false,
+      });
+
+      await service.updateUserStatus('client-uuid-1', { isActive: true });
+
+      expect(profileRepo.update).not.toHaveBeenCalled();
+      expect(jobOfferRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should require a non-blank suspensionReason when suspending', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue({ ...mockClientUser });
+
+      await expect(
+        service.updateUserStatus('client-uuid-1', { isActive: false, suspensionReason: '   ' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(userRepo.save).not.toHaveBeenCalled();
+    });
+  });
 });

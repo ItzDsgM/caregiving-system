@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   NotFoundException,
   ForbiddenException,
@@ -415,5 +417,131 @@ describe('CaregiversService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
-});
 
+  describe('search - sorting & edge branches', () => {
+    const buildQb = (rows: any[] = [], total = 0) => ({
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([rows, total]),
+    });
+
+    it.each([
+      ['price_desc', 'profile.hourlyRate', 'DESC'],
+      ['rating_desc', 'profile.ratingAverage', 'DESC'],
+      ['experience_desc', 'profile.yearsOfExperience', 'DESC'],
+      ['price_asc', 'profile.hourlyRate', 'ASC'],
+    ] as const)('should sort by %s (RF04.1.3)', async (sortBy, column, direction) => {
+      const qb = buildQb();
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      await caregiversService.search({ sortBy });
+
+      expect(qb.orderBy).toHaveBeenCalledWith(column, direction);
+    });
+
+    it('should default to rating then newest and apply defaults page=1, limit=10', async () => {
+      const qb = buildQb();
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await caregiversService.search({});
+
+      expect(qb.orderBy).toHaveBeenCalledWith('profile.ratingAverage', 'DESC');
+      expect(qb.addOrderBy).toHaveBeenCalledWith('profile.createdAt', 'DESC');
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(result.meta).toEqual({
+        totalItems: 0,
+        itemCount: 0,
+        itemsPerPage: 10,
+        totalPages: 1,
+        currentPage: 1,
+      });
+    });
+
+    it('should compute skip and totalPages for later pages', async () => {
+      const qb = buildQb([], 45);
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await caregiversService.search({ page: 3, limit: 10 });
+
+      expect(qb.skip).toHaveBeenCalledWith(20);
+      expect(result.meta.totalPages).toBe(5);
+    });
+
+    it('should only add the filters that were provided', async () => {
+      const qb = buildQb();
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      await caregiversService.search({ city: 'cali' });
+
+      // base: isActive + role, plus city
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+      expect(qb.andWhere).toHaveBeenCalledWith('profile.city ILIKE :city', { city: '%cali%' });
+    });
+
+    it('should tolerate profiles without a joined user', async () => {
+      const qb = buildQb([{ ...mockProfile, user: undefined }], 1);
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await caregiversService.search({});
+
+      expect(result.data[0].firstName).toBeUndefined();
+    });
+  });
+
+  describe('deleteDocument - physical file handling', () => {
+    const makeDoc = (fileUrl: string) =>
+      ({
+        id: 'doc-fs',
+        caregiverProfileId: mockProfile.id,
+        verificationStatus: VerificationStatus.PENDING,
+        fileUrl,
+      }) as CaregiverDocument;
+
+    beforeEach(() => {
+      (profileRepository.findOne as jest.Mock).mockResolvedValue(mockProfile);
+    });
+
+    it('should unlink the physical file when it exists', async () => {
+      const name = `jest-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
+      const dir = path.resolve('./uploads/documents');
+      fs.mkdirSync(dir, { recursive: true });
+      const filePath = path.join(dir, name);
+      fs.writeFileSync(filePath, 'x');
+      (documentRepository.findOne as jest.Mock).mockResolvedValue(
+        makeDoc(`/uploads/documents/${name}`),
+      );
+
+      await caregiversService.deleteDocument('user-uuid-1', 'doc-fs');
+
+      expect(fs.existsSync(filePath)).toBe(false);
+      expect(documentRepository.remove).toHaveBeenCalled();
+    });
+
+    it('should skip unlink and still remove the record when the file is already gone', async () => {
+      (documentRepository.findOne as jest.Mock).mockResolvedValue(
+        makeDoc('/uploads/documents/never-existed-file.pdf'),
+      );
+
+      const result = await caregiversService.deleteDocument('user-uuid-1', 'doc-fs');
+
+      expect(documentRepository.remove).toHaveBeenCalled();
+      expect(result.message).toBe('Document removed successfully');
+    });
+
+    it('should still remove the DB record when the physical file cannot be deleted', async () => {
+      // unlink() on a directory fails, simulating an FS error
+      (documentRepository.findOne as jest.Mock).mockResolvedValue(makeDoc('/uploads'));
+
+      const result = await caregiversService.deleteDocument('user-uuid-1', 'doc-fs');
+
+      expect(documentRepository.remove).toHaveBeenCalled();
+      expect(result.message).toBe('Document removed successfully');
+    });
+  });
+});

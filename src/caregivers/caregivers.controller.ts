@@ -22,11 +22,8 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { randomUUID } from 'crypto';
-import * as fs from 'fs';
 import { CaregiversService } from './caregivers.service';
+import { multerOptions } from './document-upload.config';
 import { UpdateCaregiverProfileDto } from './dtos/update-caregiver-profile.dto';
 import { UploadDocumentDto } from './dtos/upload-document.dto';
 import { SearchCaregiversDto } from './dtos/search-caregivers.dto';
@@ -36,41 +33,6 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import { User } from '../users/entities/user.entity';
-
-const uploadDir = './uploads/documents';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const multerOptions = {
-  storage: diskStorage({
-    destination: uploadDir,
-    filename: (_req, file, callback) => {
-      const ext = extname(file.originalname);
-      const uniqueName = `${randomUUID()}${ext}`;
-      callback(null, uniqueName);
-    },
-  }),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
-  },
-  fileFilter: (
-    _req: any,
-    file: Express.Multer.File,
-    callback: (error: Error | null, acceptFile: boolean) => void,
-  ) => {
-    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      return callback(
-        new BadRequestException(
-          'Invalid file type. Only PDF, JPEG, and PNG files are allowed',
-        ),
-        false,
-      );
-    }
-    callback(null, true);
-  },
-};
 
 @ApiTags('Caregivers')
 @Controller('caregivers')

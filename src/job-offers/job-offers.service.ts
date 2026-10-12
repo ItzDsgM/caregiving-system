@@ -139,7 +139,7 @@ export class JobOffersService {
     const newStartDate = dto.startDate ?? offer.startDate;
     const newEndDate = dto.endDate ?? offer.endDate;
     if (dto.startDate || dto.endDate) {
-      this.validateDates(newStartDate, newEndDate);
+      this.validateDates(newStartDate, newEndDate, !!dto.startDate);
     }
 
     Object.assign(offer, dto);
@@ -173,12 +173,26 @@ export class JobOffersService {
     }
   }
 
-  private validateDates(startDateStr: string, endDateStr: string): void {
+  private validateDates(
+    startDateStr: string,
+    endDateStr: string,
+    enforceFutureStart = true,
+  ): void {
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       throw new BadRequestException('Invalid date format');
+    }
+
+    if (enforceFutureStart) {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      if (start < today) {
+        throw new BadRequestException(
+          'startDate must be today or a future date',
+        );
+      }
     }
 
     if (end < start) {

@@ -178,7 +178,7 @@ export class ReviewsService {
         totalItems,
         itemCount: sanitizedReviews.length,
         itemsPerPage: limit,
-        totalPages: Math.ceil(totalItems / limit),
+        totalPages: Math.ceil(totalItems / limit) || 1,
         currentPage: page,
       },
     };

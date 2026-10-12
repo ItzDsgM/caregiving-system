@@ -41,7 +41,9 @@ export class SearchCaregiversDto extends PaginationDto {
   minRating?: number;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ obj }: { obj: Record<string, unknown> }) =>
+    obj.onlyVerified === 'true' || obj.onlyVerified === true,
+  )
   @IsBoolean()
   onlyVerified?: boolean;
 

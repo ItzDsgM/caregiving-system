@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { QueryRunner, Repository, SelectQueryBuilder } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
@@ -160,6 +160,52 @@ describe('UsersService', () => {
         { token: 'some-token' },
       );
       expect(result).toEqual({ id: 'user-uuid-1' });
+    });
+  });
+
+  describe('create', () => {
+    it('should persist through the default repository when no QueryRunner is given', async () => {
+      const result = await usersService.create({ email: 'n@e.w' });
+
+      expect(usersRepository.create).toHaveBeenCalledWith({ email: 'n@e.w' });
+      expect(usersRepository.save).toHaveBeenCalled();
+      expect(result.email).toBe('n@e.w');
+    });
+
+    it('should use the transactional repository when a QueryRunner is given', async () => {
+      const txRepo = {
+        create: jest.fn().mockImplementation((d) => d),
+        save: jest.fn().mockImplementation(async (u) => u),
+      };
+      const queryRunner = {
+        manager: { getRepository: jest.fn().mockReturnValue(txRepo) },
+      } as unknown as QueryRunner;
+
+      await usersService.create({ email: 'tx@e.w' }, queryRunner);
+
+      expect(queryRunner.manager.getRepository).toHaveBeenCalledWith(User);
+      expect(txRepo.save).toHaveBeenCalled();
+      expect(usersRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('save', () => {
+    it('should delegate to the repository', async () => {
+      const user = { id: 'u1' } as User;
+
+      await expect(usersService.save(user)).resolves.toBe(user);
+      expect(usersRepository.save).toHaveBeenCalledWith(user);
+    });
+  });
+
+  describe('update - not found', () => {
+    it('should propagate NotFoundException for an unknown user', async () => {
+      (usersRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(usersService.update('nope', { firstName: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(usersRepository.save).not.toHaveBeenCalled();
     });
   });
 });

@@ -19,9 +19,14 @@ const config: Config = {
   },
   moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
   collectCoverageFrom: [
-    'src/**/*.(t|j)s',
-    'libs/**/*.(t|j)s',
-    'apps/**/*.(t|j)s',
+    'src/**/*.ts',
+    // Excluded: no executable business logic (bootstrap/wiring/declarative metadata)
+    '!src/main.ts', // process bootstrap (covered by e2e)
+    '!src/**/*.module.ts', // DI wiring only
+    '!src/**/*.entity.ts', // TypeORM decorators only
+    '!src/**/*.enum.ts',
+    '!src/**/*.interface.ts',
+    '!src/**/*.spec.ts',
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',

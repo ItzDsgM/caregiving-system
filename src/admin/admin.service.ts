@@ -152,6 +152,14 @@ export class AdminService {
     } else {
       user.isActive = true;
       user.suspensionReason = null;
+
+      // Reverse the suspension ripple effect so the caregiver is searchable again
+      if (user.role === UserRole.CAREGIVER) {
+        await this.profileRepository.update(
+          { userId: user.id },
+          { isPublic: true },
+        );
+      }
     }
 
     return this.userRepository.save(user);
