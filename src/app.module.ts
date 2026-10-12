@@ -19,6 +19,7 @@ import { JobOffersModule } from './job-offers/job-offers.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { ContactRequestsModule } from './contact-requests/contact-requests.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { AdminModule } from './admin/admin.module';
 import { NotificationListener } from './common/listeners/notification.listener';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -75,6 +76,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ApplicationsModule,
     ContactRequestsModule,
     ReviewsModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [
