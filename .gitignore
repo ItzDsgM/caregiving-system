@@ -4,6 +4,11 @@ docs/
 .prettierrc*
 prettier.config.*
 
+tsconfig.build.tsbuildinfo
+docker-compose.yml
+.env
+.env.example
+
 # compiled output
 /dist
 /node_modules
