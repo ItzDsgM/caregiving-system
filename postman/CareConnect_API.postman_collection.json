@@ -1,0 +1,747 @@
+{
+  "info": {
+    "_postman_id": "careconnect-collection-001",
+    "name": "CareConnect API",
+    "description": "Complete Postman test collection for CareConnect API covering all 7 modules, RBAC authentication, privacy guards, atomic reviews, and admin moderation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Register (Caregiver)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"caregiverId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"caregiver.postman@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Gomez\",\n  \"phone\": \"+573001234567\",\n  \"role\": \"CAREGIVER\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Register (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"clientId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client.postman@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Andres\",\n  \"lastName\": \"Torres\",\n  \"phone\": \"+573109876543\",\n  \"role\": \"CLIENT\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Register (Admin - Negative Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request for Admin registration\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin.hacker@example.com\",\n  \"password\": \"AdminSecret123!\",\n  \"firstName\": \"Fake\",\n  \"lastName\": \"Admin\",\n  \"phone\": \"+573201112233\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login (Caregiver - Save JWT to Env)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.environment.set(\"caregiverToken\", json.access_token);",
+                  "    pm.environment.set(\"token\", json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"caregiver.postman@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login (Client - Save JWT to Env)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.environment.set(\"clientToken\", json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client.postman@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"caregiver.postman@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02-Caregiver-Profile",
+      "item": [
+        {
+          "name": "Update My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Certified nurse with over 6 years of hospital and home care experience for geriatric patients.\",\n  \"yearsOfExperience\": 6,\n  \"specialties\": [\"ELDERLY_CARE\", \"POST_SURGERY\"],\n  \"hourlyRate\": 35.00,\n  \"city\": \"Bogota\",\n  \"neighborhoods\": [\"Usaquen\", \"Chapinero\"],\n  \"maxCoverageRadiusKm\": 15,\n  \"availability\": [\n    {\n      \"day\": \"MONDAY\",\n      \"shifts\": [\"MORNING\", \"AFTERNOON\"]\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/caregivers/me", "host": ["{{baseUrl}}"], "path": ["caregivers", "me"] }
+          }
+        },
+        {
+          "name": "Upload Document (Multipart)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"documentId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] },
+                { "key": "documentType", "value": "ID_CARD", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/caregivers/me/documents", "host": ["{{baseUrl}}"], "path": ["caregivers", "me", "documents"] }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/caregivers/me/documents/{{documentId}}", "host": ["{{baseUrl}}"], "path": ["caregivers", "me", "documents", "{{documentId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03-Job-Offers",
+      "item": [
+        {
+          "name": "Create Job Offer (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"jobOfferId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Compassionate caregiver needed for senior father in Bogota\",\n  \"description\": \"Looking for a certified caregiver to provide daily living and medication assistance.\",\n  \"careType\": \"ELDERLY_CARE\",\n  \"locationCity\": \"Bogota\",\n  \"locationZone\": \"Usaquen\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"requiredSchedule\": [\n    {\n      \"day\": \"MONDAY\",\n      \"shifts\": [\"MORNING\"]\n    }\n  ],\n  \"budgetMin\": 25.00,\n  \"budgetMax\": 40.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/job-offers", "host": ["{{baseUrl}}"], "path": ["job-offers"] }
+          }
+        },
+        {
+          "name": "List Public Job Offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/job-offers?page=1&limit=10&city=Bogota", "host": ["{{baseUrl}}"], "path": ["job-offers"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "city", "value": "Bogota" }] }
+          }
+        },
+        {
+          "name": "Get My Offers (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/job-offers/my-offers", "host": ["{{baseUrl}}"], "path": ["job-offers", "my-offers"] }
+          }
+        },
+        {
+          "name": "Update Offer Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CLOSED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/status", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04-Applications",
+      "item": [
+        {
+          "name": "Apply to Offer (Caregiver)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"applicationId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverLetter\": \"I am deeply experienced with elderly assistance and available on your preferred schedule.\",\n  \"proposedRate\": 30.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "apply"] }
+          }
+        },
+        {
+          "name": "Apply Duplicate (Negative Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverLetter\": \"Duplicate application attempt with identical candidate.\",\n  \"proposedRate\": 30.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "apply"] }
+          }
+        },
+        {
+          "name": "List Offer Applications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/applications", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "applications"] }
+          }
+        },
+        {
+          "name": "Accept Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK and contact is unlocked\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('unlockedContactDetails');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/applications/{{applicationId}}/status", "host": ["{{baseUrl}}"], "path": ["applications", "{{applicationId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05-Contact-Requests",
+      "item": [
+        {
+          "name": "Request Contact (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"contactRequestId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caregiverId\": \"{{caregiverId}}\",\n  \"initialMessage\": \"Hello Laura, I saw your verified profile and would like to coordinate home care services.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/contact-requests", "host": ["{{baseUrl}}"], "path": ["contact-requests"] }
+          }
+        },
+        {
+          "name": "Accept Contact Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK and contact is unlocked\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('unlockedContactDetails');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}/respond", "host": ["{{baseUrl}}"], "path": ["contact-requests", "{{contactRequestId}}", "respond"] }
+          }
+        },
+        {
+          "name": "Get Contact Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}", "host": ["{{baseUrl}}"], "path": ["contact-requests", "{{contactRequestId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06-Reviews",
+      "item": [
+        {
+          "name": "Create Review (Authorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Exceptional support, compassionate and strictly followed medical instructions.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews", "host": ["{{baseUrl}}"], "path": ["caregivers", "{{caregiverId}}", "reviews"] }
+          }
+        },
+        {
+          "name": "Create Review (Without Work - Negative Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 1,\n  \"comment\": \"Fraudulent review without prior completed service interaction.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/caregivers/00000000-0000-0000-0000-000000000000/reviews", "host": ["{{baseUrl}}"], "path": ["caregivers", "00000000-0000-0000-0000-000000000000", "reviews"] }
+          }
+        },
+        {
+          "name": "Get Caregiver Reviews",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["caregivers", "{{caregiverId}}", "reviews"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07-Admin",
+      "item": [
+        {
+          "name": "List Pending Documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/admin/documents/pending", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "pending"] }
+          }
+        },
+        {
+          "name": "Approve Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/documents/{{documentId}}/verify", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "{{documentId}}", "verify"] }
+          }
+        },
+        {
+          "name": "Suspend User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false,\n  \"suspensionReason\": \"Account suspended for terms of service violations.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{caregiverId}}", "status"] }
+          }
+        }
+      ]
+    }
+  ]
+}
