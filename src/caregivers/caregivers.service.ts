@@ -13,7 +13,9 @@ import { CaregiverProfile } from '../caregiver-profiles/entities/caregiver-profi
 import { CaregiverDocument } from '../caregiver-profiles/entities/caregiver-document.entity';
 import { UpdateCaregiverProfileDto } from './dtos/update-caregiver-profile.dto';
 import { UploadDocumentDto } from './dtos/upload-document.dto';
+import { SearchCaregiversDto } from './dtos/search-caregivers.dto';
 import { VerificationStatus } from '../common/enums/verification-status.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class CaregiversService {
@@ -114,5 +116,148 @@ export class CaregiversService {
     await this.documentRepository.remove(document);
 
     return { message: 'Document removed successfully' };
+  }
+
+  async search(dto: SearchCaregiversDto) {
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const query = this.profileRepository
+      .createQueryBuilder('profile')
+      .innerJoinAndSelect('profile.user', 'user')
+      .where('profile.isPublic = :isPublic', { isPublic: true })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .andWhere('user.role = :role', { role: UserRole.CAREGIVER });
+
+    if (dto.city) {
+      query.andWhere('profile.city ILIKE :city', {
+        city: `%${dto.city}%`,
+      });
+    }
+
+    if (dto.specialty) {
+      query.andWhere(':specialty = ANY(profile.specialties)', {
+        specialty: dto.specialty,
+      });
+    }
+
+    if (dto.minPrice) {
+      query.andWhere('profile.hourlyRate >= :minPrice', {
+        minPrice: dto.minPrice,
+      });
+    }
+
+    if (dto.maxPrice) {
+      query.andWhere('profile.hourlyRate <= :maxPrice', {
+        maxPrice: dto.maxPrice,
+      });
+    }
+
+    if (dto.minRating) {
+      query.andWhere('profile.ratingAverage >= :minRating', {
+        minRating: dto.minRating,
+      });
+    }
+
+    if (dto.onlyVerified) {
+      query.andWhere('profile.isDocumentVerified = :onlyVerified', {
+        onlyVerified: true,
+      });
+    }
+
+    if (dto.sortBy === 'price_asc') {
+      query.orderBy('profile.hourlyRate', 'ASC');
+    } else if (dto.sortBy === 'price_desc') {
+      query.orderBy('profile.hourlyRate', 'DESC');
+    } else if (dto.sortBy === 'rating_desc') {
+      query.orderBy('profile.ratingAverage', 'DESC');
+    } else if (dto.sortBy === 'experience_desc') {
+      query.orderBy('profile.yearsOfExperience', 'DESC');
+    } else {
+      query
+        .orderBy('profile.ratingAverage', 'DESC')
+        .addOrderBy('profile.createdAt', 'DESC');
+    }
+
+    query.skip(skip).take(limit);
+
+    const [profiles, totalItems] = await query.getManyAndCount();
+    const totalPages = Math.ceil(totalItems / limit) || 1;
+
+    // Sanitize to strictly hide private contact data (RF04.1.5, RF05.2)
+    const data = profiles.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      firstName: p.user?.firstName,
+      lastName: p.user?.lastName,
+      bio: p.bio,
+      yearsOfExperience: p.yearsOfExperience,
+      specialties: p.specialties,
+      hourlyRate: p.hourlyRate,
+      dailyRate8h: p.dailyRate8h,
+      dailyRate12h: p.dailyRate12h,
+      overnightRate: p.overnightRate,
+      city: p.city,
+      neighborhoods: p.neighborhoods,
+      maxCoverageRadiusKm: p.maxCoverageRadiusKm,
+      availability: p.availability,
+      ratingAverage: p.ratingAverage,
+      totalReviews: p.totalReviews,
+      isDocumentVerified: p.isDocumentVerified,
+    }));
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
+      },
+    };
+  }
+
+  async getPublicProfile(id: string) {
+    const profile = await this.profileRepository.findOne({
+      where: [{ id }, { userId: id }],
+      relations: { user: true, documents: true },
+    });
+
+    if (!profile || !profile.isPublic || !profile.user?.isActive) {
+      throw new NotFoundException(`Caregiver profile with ID "${id}" was not found`);
+    }
+
+    // Include approved documents only and strip private contact info (RF04.1.5)
+    return {
+      id: profile.id,
+      userId: profile.userId,
+      firstName: profile.user?.firstName,
+      lastName: profile.user?.lastName,
+      bio: profile.bio,
+      yearsOfExperience: profile.yearsOfExperience,
+      specialties: profile.specialties,
+      hourlyRate: profile.hourlyRate,
+      dailyRate8h: profile.dailyRate8h,
+      dailyRate12h: profile.dailyRate12h,
+      overnightRate: profile.overnightRate,
+      city: profile.city,
+      neighborhoods: profile.neighborhoods,
+      maxCoverageRadiusKm: profile.maxCoverageRadiusKm,
+      availability: profile.availability,
+      ratingAverage: profile.ratingAverage,
+      totalReviews: profile.totalReviews,
+      isDocumentVerified: profile.isDocumentVerified,
+      documents: (profile.documents || [])
+        .filter((doc) => doc.verificationStatus === VerificationStatus.APPROVED)
+        .map((doc) => ({
+          id: doc.id,
+          documentType: doc.documentType,
+          fileUrl: doc.fileUrl,
+          verificationStatus: doc.verificationStatus,
+          createdAt: doc.createdAt,
+        })),
+    };
   }
 }

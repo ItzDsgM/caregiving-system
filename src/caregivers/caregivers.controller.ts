@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -20,6 +21,7 @@ import * as fs from 'fs';
 import { CaregiversService } from './caregivers.service';
 import { UpdateCaregiverProfileDto } from './dtos/update-caregiver-profile.dto';
 import { UploadDocumentDto } from './dtos/upload-document.dto';
+import { SearchCaregiversDto } from './dtos/search-caregivers.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -63,18 +65,25 @@ const multerOptions = {
 };
 
 @Controller('caregivers')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.CAREGIVER)
 @UseInterceptors(ClassSerializerInterceptor)
 export class CaregiversController {
   constructor(private readonly caregiversService: CaregiversService) {}
 
+  @Get('search')
+  async search(@Query() searchDto: SearchCaregiversDto) {
+    return this.caregiversService.search(searchDto);
+  }
+
   @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CAREGIVER)
   async getMyProfile(@CurrentUser() user: User) {
     return this.caregiversService.getMyProfile(user.id);
   }
 
   @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CAREGIVER)
   async updateMyProfile(
     @CurrentUser() user: User,
     @Body() updateDto: UpdateCaregiverProfileDto,
@@ -83,6 +92,8 @@ export class CaregiversController {
   }
 
   @Post('me/documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CAREGIVER)
   @UseInterceptors(FileInterceptor('file', multerOptions))
   async uploadDocument(
     @CurrentUser() user: User,
@@ -96,7 +107,14 @@ export class CaregiversController {
   }
 
   @Delete('me/documents/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CAREGIVER)
   async deleteDocument(@CurrentUser() user: User, @Param('id') id: string) {
     return this.caregiversService.deleteDocument(user.id, id);
+  }
+
+  @Get(':id')
+  async getPublicProfile(@Param('id') id: string) {
+    return this.caregiversService.getPublicProfile(id);
   }
 }

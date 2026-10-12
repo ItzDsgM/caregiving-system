@@ -7,9 +7,11 @@ import { createObserveModule } from '@nestjs/observe';
 import { User } from './users/entities/user.entity';
 import { CaregiverProfile } from './caregiver-profiles/entities/caregiver-profile.entity';
 import { CaregiverDocument } from './caregiver-profiles/entities/caregiver-document.entity';
+import { JobOffer } from './job-offers/entities/job-offer.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CaregiversModule } from './caregivers/caregivers.module';
+import { JobOffersModule } from './job-offers/job-offers.module';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -29,7 +31,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
-        entities: [User, CaregiverProfile, CaregiverDocument],
+        entities: [User, CaregiverProfile, CaregiverDocument, JobOffer],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
           configService.get<boolean>('DB_SYNCHRONIZE', true) === true,
@@ -52,6 +54,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     UsersModule,
     AuthModule,
     CaregiversModule,
+    JobOffersModule,
   ],
   controllers: [],
   providers: [

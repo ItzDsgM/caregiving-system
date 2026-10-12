@@ -50,6 +50,7 @@ describe('CaregiversService', () => {
     profileRepository = {
       findOne: jest.fn(),
       save: jest.fn().mockImplementation(async (entity) => entity),
+      createQueryBuilder: jest.fn(),
     };
 
     documentRepository = {
@@ -287,4 +288,132 @@ describe('CaregiversService', () => {
       expect(documentRepository.remove).not.toHaveBeenCalled();
     });
   });
+
+  describe('search', () => {
+    it('should query caregivers with filters and return paginated data with meta', async () => {
+      const mockUser = {
+        id: 'user-uuid-1',
+        firstName: 'Maria',
+        lastName: 'Lopez',
+        email: 'private@example.com',
+        phone: '+573001234567',
+      };
+
+      const mockProfileWithUser = {
+        ...mockProfile,
+        user: mockUser,
+      };
+
+      const mockQueryBuilder = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockProfileWithUser], 1]),
+      };
+
+      (profileRepository.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder as any,
+      );
+
+      const result = await caregiversService.search({
+        city: 'Bogota',
+        specialty: CareSpecialty.ELDERLY_CARE,
+        minPrice: 20,
+        maxPrice: 30,
+        minRating: 4,
+        onlyVerified: true,
+        sortBy: 'price_asc',
+        page: 1,
+        limit: 10,
+      });
+
+      expect(mockQueryBuilder.innerJoinAndSelect).toHaveBeenCalledWith(
+        'profile.user',
+        'user',
+      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'profile.isPublic = :isPublic',
+        { isPublic: true },
+      );
+      expect(result.data).toHaveLength(1);
+      // Ensure private contact info is stripped (RF04.1.5)
+      expect(result.data[0]).not.toHaveProperty('email');
+      expect(result.data[0]).not.toHaveProperty('phone');
+      expect(result.data[0].firstName).toBe('Maria');
+      expect(result.meta).toEqual({
+        totalItems: 1,
+        itemCount: 1,
+        itemsPerPage: 10,
+        totalPages: 1,
+        currentPage: 1,
+      });
+    });
+  });
+
+  describe('getPublicProfile', () => {
+    it('should return public profile with approved documents only and omitted contact info', async () => {
+      const approvedDoc: CaregiverDocument = {
+        id: 'doc-approved-1',
+        caregiverProfileId: mockProfile.id,
+        caregiverProfile: mockProfile,
+        documentType: DocumentType.ACADEMIC_DEGREE,
+        fileUrl: '/uploads/documents/degree.pdf',
+        verificationStatus: VerificationStatus.APPROVED,
+        adminNotes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const pendingDoc: CaregiverDocument = {
+        id: 'doc-pending-1',
+        caregiverProfileId: mockProfile.id,
+        caregiverProfile: mockProfile,
+        documentType: DocumentType.ID_CARD,
+        fileUrl: '/uploads/documents/id.pdf',
+        verificationStatus: VerificationStatus.PENDING,
+        adminNotes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const profileWithDocs = {
+        ...mockProfile,
+        user: {
+          id: 'user-uuid-1',
+          firstName: 'Maria',
+          lastName: 'Lopez',
+          email: 'secret@email.com',
+          phone: '+1234567890',
+          isActive: true,
+        },
+        documents: [approvedDoc, pendingDoc],
+      };
+
+      (profileRepository.findOne as jest.Mock).mockResolvedValue(profileWithDocs);
+
+      const result = await caregiversService.getPublicProfile('profile-uuid-1');
+
+      expect(result).toHaveProperty('id', 'profile-uuid-1');
+      expect(result).toHaveProperty('firstName', 'Maria');
+      // Ensure private contact details are withheld
+      expect(result).not.toHaveProperty('email');
+      expect(result).not.toHaveProperty('phone');
+      // Ensure only APPROVED documents are publicly listed
+      expect(result.documents).toHaveLength(1);
+      expect(result.documents[0].id).toBe('doc-approved-1');
+    });
+
+    it('should throw NotFoundException if public profile does not exist or user is inactive', async () => {
+      (profileRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        caregiversService.getPublicProfile('missing-id'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });
+
