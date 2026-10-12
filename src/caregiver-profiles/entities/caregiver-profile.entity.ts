@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { CareSpecialty } from '../../common/enums/care-specialty.enum';
 import { User } from '../../users/entities/user.entity';
+import type { CaregiverDocument } from './caregiver-document.entity';
 
 @Entity('caregiver_profiles')
 export class CaregiverProfile {
@@ -73,6 +75,9 @@ export class CaregiverProfile {
 
   @Column({ type: 'boolean', default: true })
   isPublic: boolean;
+
+  @OneToMany('CaregiverDocument', (doc: any) => doc.caregiverProfile)
+  documents: CaregiverDocument[];
 
   @CreateDateColumn()
   createdAt: Date;

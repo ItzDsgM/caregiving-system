@@ -4,12 +4,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
 import { CaregiverProfile } from './caregiver-profiles/entities/caregiver-profile.entity';
+import { CaregiverDocument } from './caregiver-profiles/entities/caregiver-document.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { CaregiversModule } from './caregivers/caregivers.module';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -29,7 +29,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
-        entities: [User, CaregiverProfile],
+        entities: [User, CaregiverProfile, CaregiverDocument],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
           configService.get<boolean>('DB_SYNCHRONIZE', true) === true,
@@ -51,10 +51,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
     UsersModule,
     AuthModule,
+    CaregiversModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

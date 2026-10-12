@@ -23,27 +23,33 @@ describe('AuthService', () => {
   let usersService: jest.Mocked<Partial<UsersService>>;
   let jwtService: jest.Mocked<Partial<JwtService>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
+  let mockManager: {
+    create: jest.Mock;
+    save: jest.Mock;
+  };
   let mockQueryRunner: jest.Mocked<Partial<QueryRunner>>;
 
   beforeEach(async () => {
+    mockManager = {
+      create: jest.fn((entityClass, data) => {
+        if (entityClass === User) {
+          return { id: 'user-uuid-1', ...data } as User;
+        }
+        if (entityClass === CaregiverProfile) {
+          return { id: 'profile-uuid-1', ...data } as CaregiverProfile;
+        }
+        return data;
+      }),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+
     mockQueryRunner = {
       connect: jest.fn().mockResolvedValue(undefined),
       startTransaction: jest.fn().mockResolvedValue(undefined),
       commitTransaction: jest.fn().mockResolvedValue(undefined),
       rollbackTransaction: jest.fn().mockResolvedValue(undefined),
       release: jest.fn().mockResolvedValue(undefined),
-      manager: {
-        create: jest.fn((entityClass, data) => {
-          if (entityClass === User) {
-            return { id: 'user-uuid-1', ...data } as User;
-          }
-          if (entityClass === CaregiverProfile) {
-            return { id: 'profile-uuid-1', ...data } as CaregiverProfile;
-          }
-          return data;
-        }) as any,
-        save: jest.fn().mockImplementation(async (entity) => entity) as any,
-      } as any,
+      manager: mockManager as any,
     };
 
     dataSource = {
@@ -95,7 +101,7 @@ describe('AuthService', () => {
 
       expect(usersService.findByEmail).toHaveBeenCalledWith(registerDto.email);
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+      expect(mockManager.create).toHaveBeenCalledWith(
         User,
         expect.objectContaining({
           email: registerDto.email,
@@ -103,7 +109,7 @@ describe('AuthService', () => {
           isActive: true,
         }),
       );
-      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+      expect(mockManager.create).toHaveBeenCalledWith(
         CaregiverProfile,
         expect.objectContaining({
           userId: 'user-uuid-1',
@@ -126,13 +132,13 @@ describe('AuthService', () => {
 
       const result = await authService.register(clientDto);
 
-      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+      expect(mockManager.create).toHaveBeenCalledWith(
         User,
         expect.objectContaining({
           role: UserRole.CLIENT,
         }),
       );
-      expect(mockQueryRunner.manager.create).not.toHaveBeenCalledWith(
+      expect(mockManager.create).not.toHaveBeenCalledWith(
         CaregiverProfile,
         expect.anything(),
       );
@@ -164,7 +170,7 @@ describe('AuthService', () => {
 
     it('should rollback transaction if error occurs during persistence', async () => {
       (usersService.findByEmail as jest.Mock).mockResolvedValue(null);
-      (mockQueryRunner.manager.save as jest.Mock).mockRejectedValue(
+      (mockManager.save as jest.Mock).mockRejectedValue(
         new Error('Database write error'),
       );
 
