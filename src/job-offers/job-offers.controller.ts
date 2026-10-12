@@ -22,10 +22,16 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 import { User } from '../users/entities/user.entity';
 
+import { ApplicationsService } from '../applications/applications.service';
+import { ApplyJobOfferDto } from '../applications/dtos/apply-job-offer.dto';
+
 @Controller('job-offers')
 @UseInterceptors(ClassSerializerInterceptor)
 export class JobOffersController {
-  constructor(private readonly jobOffersService: JobOffersService) {}
+  constructor(
+    private readonly jobOffersService: JobOffersService,
+    private readonly applicationsService: ApplicationsService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,6 +53,27 @@ export class JobOffersController {
   @Get()
   async findPublicOffers(@Query() filterDto: FilterJobOffersDto) {
     return this.jobOffersService.findPublicOffers(filterDto);
+  }
+
+  @Post(':id/apply')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CAREGIVER)
+  async apply(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() applyDto: ApplyJobOfferDto,
+  ) {
+    return this.applicationsService.apply(user.id, id, applyDto);
+  }
+
+  @Get(':id/applications')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CLIENT)
+  async getApplications(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.applicationsService.findByJobOffer(user.id, id);
   }
 
   @Get(':id')

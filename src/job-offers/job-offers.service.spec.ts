@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JobOffersService } from './job-offers.service';
+import { ApplicationsService } from '../applications/applications.service';
 import { JobOffer } from './entities/job-offer.entity';
 import { JobOfferStatus } from '../common/enums/job-offer-status.enum';
 import { CareSpecialty } from '../common/enums/care-specialty.enum';
@@ -18,6 +19,7 @@ import { ShiftType } from '../common/enums/shift-type.enum';
 describe('JobOffersService', () => {
   let service: JobOffersService;
   let repository: jest.Mocked<Partial<Repository<JobOffer>>>;
+  let mockApplicationsService: { countByJobOffer: jest.Mock };
 
   const mockJobOffer: JobOffer = {
     id: 'offer-uuid-1',
@@ -47,12 +49,20 @@ describe('JobOffersService', () => {
       createQueryBuilder: jest.fn(),
     };
 
+    mockApplicationsService = {
+      countByJobOffer: jest.fn().mockResolvedValue(0),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JobOffersService,
         {
           provide: getRepositoryToken(JobOffer),
           useValue: repository,
+        },
+        {
+          provide: ApplicationsService,
+          useValue: mockApplicationsService,
         },
       ],
     }).compile();

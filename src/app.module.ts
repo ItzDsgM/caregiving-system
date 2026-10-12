@@ -3,15 +3,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { createObserveModule } from '@nestjs/observe';
 import { User } from './users/entities/user.entity';
 import { CaregiverProfile } from './caregiver-profiles/entities/caregiver-profile.entity';
 import { CaregiverDocument } from './caregiver-profiles/entities/caregiver-document.entity';
 import { JobOffer } from './job-offers/entities/job-offer.entity';
+import { Application } from './applications/entities/application.entity';
+import { ContactRequest } from './contact-requests/entities/contact-request.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CaregiversModule } from './caregivers/caregivers.module';
 import { JobOffersModule } from './job-offers/job-offers.module';
+import { ApplicationsModule } from './applications/applications.module';
+import { ContactRequestsModule } from './contact-requests/contact-requests.module';
+import { NotificationListener } from './common/listeners/notification.listener';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -21,6 +27,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       isGlobal: true,
       envFilePath: '.env',
     }),
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,7 +38,14 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
-        entities: [User, CaregiverProfile, CaregiverDocument, JobOffer],
+        entities: [
+          User,
+          CaregiverProfile,
+          CaregiverDocument,
+          JobOffer,
+          Application,
+          ContactRequest,
+        ],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
           configService.get<boolean>('DB_SYNCHRONIZE', true) === true,
@@ -55,6 +69,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AuthModule,
     CaregiversModule,
     JobOffersModule,
+    ApplicationsModule,
+    ContactRequestsModule,
   ],
   controllers: [],
   providers: [
@@ -62,6 +78,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    NotificationListener,
   ],
 })
 export class AppModule {}

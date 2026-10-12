@@ -12,11 +12,14 @@ import { UpdateJobOfferDto } from './dtos/update-job-offer.dto';
 import { FilterJobOffersDto } from './dtos/filter-job-offers.dto';
 import { JobOfferStatus } from '../common/enums/job-offer-status.enum';
 
+import { ApplicationsService } from '../applications/applications.service';
+
 @Injectable()
 export class JobOffersService {
   constructor(
     @InjectRepository(JobOffer)
     private readonly jobOffersRepository: Repository<JobOffer>,
+    private readonly applicationsService: ApplicationsService,
   ) {}
 
   async create(clientId: string, dto: CreateJobOfferDto): Promise<JobOffer> {
@@ -38,10 +41,16 @@ export class JobOffersService {
       order: { createdAt: 'DESC' },
     });
 
-    return offers.map((offer) => ({
-      ...offer,
-      applicationsCount: 0,
-    }));
+    const result = [];
+    for (const offer of offers) {
+      const count = await this.applicationsService.countByJobOffer(offer.id);
+      result.push({
+        ...offer,
+        applicationsCount: count,
+      });
+    }
+
+    return result;
   }
 
   async findPublicOffers(filterDto: FilterJobOffersDto) {
