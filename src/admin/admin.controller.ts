@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
@@ -12,6 +13,8 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagg
 import { AdminService } from './admin.service';
 import { VerifyDocumentDto } from './dtos/verify-document.dto';
 import { UpdateUserStatusDto } from './dtos/update-user-status.dto';
+import { BulkCreateUsersDto } from './dtos/bulk-create-users.dto';
+import { BulkVerifyDocumentsDto } from './dtos/bulk-verify-documents.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -44,6 +47,24 @@ export class AdminController {
     @Body() dto: VerifyDocumentDto,
   ) {
     return this.adminService.verifyDocument(id, dto);
+  }
+
+  @Patch('documents/bulk-verify')
+  @ApiOperation({ summary: 'Verify multiple documents in a single batch (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Documents verified and trust badges updated' })
+  @ApiResponse({ status: 400, description: 'Missing adminNotes for rejected documents' })
+  @ApiResponse({ status: 404, description: 'One or more documents not found' })
+  async bulkVerifyDocuments(@Body() dto: BulkVerifyDocumentsDto) {
+    return this.adminService.bulkVerifyDocuments(dto);
+  }
+
+  @Post('users/bulk')
+  @ApiOperation({ summary: 'Provision multiple users in bulk (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Batch of users successfully created' })
+  @ApiResponse({ status: 400, description: 'Invalid batch input or duplicate emails' })
+  @ApiResponse({ status: 409, description: 'One or more emails already registered' })
+  async bulkCreateUsers(@Body() dto: BulkCreateUsersDto) {
+    return this.adminService.bulkCreateUsers(dto);
   }
 
   @Patch('users/:id/status')

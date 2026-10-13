@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dtos/register.dto';
+import { BulkRegisterDto } from './dtos/bulk-register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
@@ -68,6 +69,70 @@ export class AuthService {
 
       await queryRunner.commitTransaction();
       return this.sanitizeUser(savedUser);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async bulkRegister(
+    bulkDto: BulkRegisterDto,
+  ): Promise<{ count: number; users: Omit<User, 'password'>[] }> {
+    const emails = bulkDto.users.map((u) => u.email.toLowerCase());
+    const uniqueEmails = new Set(emails);
+    if (uniqueEmails.size !== emails.length) {
+      throw new BadRequestException('Duplicate emails found within the registration payload');
+    }
+
+    for (const dto of bulkDto.users) {
+      if (dto.role === UserRole.ADMIN) {
+        throw new BadRequestException('Admin role cannot be registered publicly');
+      }
+      const existingUser = await this.usersService.findByEmail(dto.email);
+      if (existingUser) {
+        throw new ConflictException(`Email "${dto.email}" is already registered`);
+      }
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const createdUsers: User[] = [];
+
+      for (const dto of bulkDto.users) {
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const user = queryRunner.manager.create(User, {
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
+          role: dto.role,
+          isActive: true,
+        });
+
+        const savedUser = await queryRunner.manager.save(user);
+
+        if (dto.role === UserRole.CAREGIVER) {
+          const caregiverProfile = queryRunner.manager.create(CaregiverProfile, {
+            userId: savedUser.id,
+          });
+          await queryRunner.manager.save(caregiverProfile);
+        }
+
+        createdUsers.push(savedUser);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        count: createdUsers.length,
+        users: createdUsers.map((u) => this.sanitizeUser(u)),
+      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

@@ -189,7 +189,7 @@ describe('AuthService', () => {
     };
 
     it('should successfully authenticate and return token with sanitized user', async () => {
-      const hashedPassword = await bcrypt.hash('Password123', 10);
+      const hashedPassword = await bcrypt.hash('Password123', 1);
       const mockUser: User = {
         id: 'user-uuid-1',
         email: 'test@example.com',
@@ -229,7 +229,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException (401) generically if password does not match', async () => {
-      const wrongHash = await bcrypt.hash('OtherPassword456', 10);
+      const wrongHash = await bcrypt.hash('OtherPassword456', 1);
       const mockUser = {
         id: 'user-uuid-1',
         email: loginDto.email,
@@ -245,7 +245,7 @@ describe('AuthService', () => {
     });
 
     it('should throw ForbiddenException (403) with message if user is suspended/inactive', async () => {
-      const hashedPassword = await bcrypt.hash('Password123', 10);
+      const hashedPassword = await bcrypt.hash('Password123', 1);
       const inactiveUser = {
         id: 'user-uuid-1',
         email: loginDto.email,
@@ -351,6 +351,127 @@ describe('AuthService', () => {
       await expect(authService.resetPassword(dto)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('bulkRegister', () => {
+    it('should throw BadRequestException if duplicate emails exist within payload', async () => {
+      await expect(
+        authService.bulkRegister({
+          users: [
+            {
+              email: 'duplicate@example.com',
+              password: 'Password123',
+              firstName: 'Test1',
+              lastName: 'User1',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+            {
+              email: 'DUPLICATE@EXAMPLE.COM',
+              password: 'Password123',
+              firstName: 'Test2',
+              lastName: 'User2',
+              phone: '+573001234568',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if any user has ADMIN role', async () => {
+      await expect(
+        authService.bulkRegister({
+          users: [
+            {
+              email: 'admin@example.com',
+              password: 'Password123',
+              firstName: 'Admin',
+              lastName: 'User',
+              phone: '+573001234567',
+              role: UserRole.ADMIN,
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException if any email is already registered', async () => {
+      (usersService.findByEmail as jest.Mock).mockResolvedValueOnce({ id: 'existing-id' });
+
+      await expect(
+        authService.bulkRegister({
+          users: [
+            {
+              email: 'existing@example.com',
+              password: 'Password123',
+              firstName: 'Test',
+              lastName: 'User',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should create multiple users, create profile for caregivers, and return sanitized users', async () => {
+      (usersService.findByEmail as jest.Mock).mockResolvedValue(null);
+
+      const result = await authService.bulkRegister({
+        users: [
+          {
+            email: 'caregiver.bulk@example.com',
+            password: 'Password123',
+            firstName: 'Caregiver',
+            lastName: 'Bulk',
+            phone: '+573001234567',
+            role: UserRole.CAREGIVER,
+          },
+          {
+            email: 'client.bulk@example.com',
+            password: 'Password123',
+            firstName: 'Client',
+            lastName: 'Bulk',
+            phone: '+573001234568',
+            role: UserRole.CLIENT,
+          },
+        ],
+      });
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockManager.create).toHaveBeenCalledWith(User, expect.objectContaining({ email: 'caregiver.bulk@example.com' }));
+      expect(mockManager.create).toHaveBeenCalledWith(CaregiverProfile, expect.objectContaining({ userId: 'user-uuid-1' }));
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(result.count).toBe(2);
+      expect(result.users[0]).not.toHaveProperty('password');
+      expect(result.users[1]).not.toHaveProperty('password');
+    });
+
+    it('should rollback transaction if an error occurs during processing', async () => {
+      (usersService.findByEmail as jest.Mock).mockResolvedValue(null);
+      mockManager.save.mockRejectedValueOnce(new Error('Insert error'));
+
+      await expect(
+        authService.bulkRegister({
+          users: [
+            {
+              email: 'fail@example.com',
+              password: 'Password123',
+              firstName: 'Fail',
+              lastName: 'User',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow('Insert error');
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
   });
 });

@@ -13,6 +13,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JobOffersService } from './job-offers.service';
 import { CreateJobOfferDto } from './dtos/create-job-offer.dto';
+import { BulkCreateJobOffersDto } from './dtos/bulk-create-job-offers.dto';
 import { UpdateJobOfferDto } from './dtos/update-job-offer.dto';
 import { UpdateJobOfferStatusDto } from './dtos/update-job-offer-status.dto';
 import { FilterJobOffersDto } from './dtos/filter-job-offers.dto';
@@ -47,6 +48,20 @@ export class JobOffersController {
     @Body() createDto: CreateJobOfferDto,
   ) {
     return this.jobOffersService.create(user.id, createDto);
+  }
+
+  @Post('bulk')
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CLIENT)
+  @ApiOperation({ summary: 'Create multiple job offers in a single transaction' })
+  @ApiResponse({ status: 201, description: 'Batch job offers created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid offer items or schedule/budget values' })
+  async bulkCreate(
+    @CurrentUser() user: User,
+    @Body() bulkDto: BulkCreateJobOffersDto,
+  ) {
+    return this.jobOffersService.bulkCreate(user.id, bulkDto);
   }
 
   @Get('my-offers')

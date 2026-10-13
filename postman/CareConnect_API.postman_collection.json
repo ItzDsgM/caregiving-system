@@ -88,6 +88,47 @@
           }
         },
         {
+          "name": "Bulk Register Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.environment.set(\"bulkCgEmail\", \"bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Bulk registration created users\", function () {",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "    pm.expect(json.users).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"users\": [\n    {\n      \"email\": \"{{bulkCgEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"BulkCaregiver\",\n      \"lastName\": \"Test\",\n      \"phone\": \"+573001112233\",\n      \"role\": \"CAREGIVER\"\n    },\n    {\n      \"email\": \"{{bulkClEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"BulkClient\",\n      \"lastName\": \"Test\",\n      \"phone\": \"+573104445566\",\n      \"role\": \"CLIENT\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/bulk-register", "host": ["{{baseUrl}}"], "path": ["auth", "bulk-register"] }
+          }
+        },
+        {
           "name": "Register (Admin - Negative Test)",
           "event": [
             {
@@ -167,6 +208,35 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login (Admin - Save JWT to Env)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.environment.set(\"adminToken\", json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@careconnect.com\",\n  \"password\": \"AdminSecret123!\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
           }
@@ -372,6 +442,37 @@
               "raw": "{\n  \"title\": \"Compassionate caregiver needed for senior father in Bogota\",\n  \"description\": \"Looking for a certified caregiver to provide daily living and medication assistance.\",\n  \"careType\": \"ELDERLY_CARE\",\n  \"locationCity\": \"Bogota\",\n  \"locationZone\": \"Usaquen\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"requiredSchedule\": [\n    {\n      \"day\": \"MONDAY\",\n      \"shifts\": [\"MORNING\"]\n    }\n  ],\n  \"budgetMin\": 25.00,\n  \"budgetMax\": 40.00\n}"
             },
             "url": { "raw": "{{baseUrl}}/job-offers", "host": ["{{baseUrl}}"], "path": ["job-offers"] }
+          }
+        },
+        {
+          "name": "Bulk Create Job Offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Bulk offers created\", function () {",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "    pm.expect(json.jobOffers).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offers\": [\n    {\n      \"title\": \"Bulk Weekend Companion for Senior in Bogota\",\n      \"description\": \"Offering regular weekend companionship and basic medication reminders for elderly father.\",\n      \"careType\": \"ELDERLY_CARE\",\n      \"locationCity\": \"Bogota\",\n      \"locationZone\": \"Suba\",\n      \"startDate\": \"2026-12-01\",\n      \"endDate\": \"2026-12-31\",\n      \"requiredSchedule\": [{ \"day\": \"SATURDAY\", \"shifts\": [\"MORNING\"] }],\n      \"budgetMin\": 30,\n      \"budgetMax\": 45\n    },\n    {\n      \"title\": \"Bulk Afternoon Child Care and Homework Help\",\n      \"description\": \"Looking for evening assistance with children homework and dinner preparation.\",\n      \"careType\": \"CHILD_CARE\",\n      \"locationCity\": \"Bogota\",\n      \"locationZone\": \"Teusaquillo\",\n      \"startDate\": \"2026-12-05\",\n      \"endDate\": \"2026-12-28\",\n      \"requiredSchedule\": [{ \"day\": \"MONDAY\", \"shifts\": [\"AFTERNOON\"] }],\n      \"budgetMin\": 25,\n      \"budgetMax\": 35\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/job-offers/bulk", "host": ["{{baseUrl}}"], "path": ["job-offers", "bulk"] }
           }
         },
         {
@@ -796,35 +897,6 @@
           "name": "List Pending Documents",
           "event": [
             {
-              "listen": "prerequest",
-              "script": {
-                "exec": [
-                  "if (!pm.environment.get('adminToken')) {",
-                  "    pm.sendRequest({",
-                  "        url: pm.environment.get('baseUrl') + '/auth/login',",
-                  "        method: 'POST',",
-                  "        header: { 'Content-Type': 'application/json' },",
-                  "        body: {",
-                  "            mode: 'raw',",
-                  "            raw: JSON.stringify({",
-                  "                email: 'admin@careconnect.com',",
-                  "                password: 'AdminSecret123!'",
-                  "            })",
-                  "        }",
-                  "    }, function (err, res) {",
-                  "        if (!err && res) {",
-                  "            const json = res.json();",
-                  "            if (json.access_token) {",
-                  "                pm.environment.set('adminToken', json.access_token);",
-                  "            }",
-                  "        }",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            },
-            {
               "listen": "test",
               "script": {
                 "exec": [
@@ -867,6 +939,79 @@
               "raw": "{\n  \"status\": \"APPROVED\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/admin/documents/{{documentId}}/verify", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "{{documentId}}", "verify"] }
+          }
+        },
+        {
+          "name": "Bulk Create Users (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.environment.set(\"adminBulkCgEmail\", \"admin.bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Admin created batch of users\", function () {",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "    pm.expect(json.users).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"users\": [\n    {\n      \"email\": \"{{adminBulkCgEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"AdminBulk\",\n      \"lastName\": \"Caregiver\",\n      \"phone\": \"+573129998877\",\n      \"role\": \"CAREGIVER\"\n    },\n    {\n      \"email\": \"{{adminBulkClEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"AdminBulk\",\n      \"lastName\": \"Client\",\n      \"phone\": \"+573129998866\",\n      \"role\": \"CLIENT\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/users/bulk", "host": ["{{baseUrl}}"], "path": ["admin", "users", "bulk"] }
+          }
+        },
+        {
+          "name": "Bulk Verify Documents (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Batch documents verified\", function () {",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "    pm.expect(json.documents).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{documentId}}\",\n      \"status\": \"APPROVED\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/documents/bulk-verify", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "bulk-verify"] }
           }
         },
         {

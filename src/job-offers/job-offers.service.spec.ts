@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder, DataSource, QueryRunner } from 'typeorm';
 import {
   BadRequestException,
   ForbiddenException,
@@ -20,6 +20,12 @@ describe('JobOffersService', () => {
   let service: JobOffersService;
   let repository: jest.Mocked<Partial<Repository<JobOffer>>>;
   let mockApplicationsService: { countByJobOffer: jest.Mock };
+  let dataSource: jest.Mocked<Partial<DataSource>>;
+  let queryRunner: jest.Mocked<Partial<QueryRunner>>;
+  let mockManager: {
+    create: jest.Mock;
+    save: jest.Mock;
+  };
 
   const mockJobOffer: JobOffer = {
     id: 'offer-uuid-1',
@@ -53,6 +59,24 @@ describe('JobOffersService', () => {
       countByJobOffer: jest.fn().mockResolvedValue(0),
     };
 
+    mockManager = {
+      create: jest.fn((entityClass, data) => ({ id: 'offer-bulk-1', ...data } as JobOffer)),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+
+    queryRunner = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager: mockManager as any,
+    };
+
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(queryRunner as QueryRunner),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JobOffersService,
@@ -63,6 +87,10 @@ describe('JobOffersService', () => {
         {
           provide: ApplicationsService,
           useValue: mockApplicationsService,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
       ],
     }).compile();
@@ -406,6 +434,83 @@ describe('JobOffersService', () => {
       expect(qb.skip).toHaveBeenCalledWith(0);
       expect(qb.take).toHaveBeenCalledWith(10);
       expect(result.meta.itemCount).toBe(1);
+    });
+  });
+
+  describe('bulkCreate', () => {
+    const validOfferItem = {
+      title: 'Valid Job Offer Title Here',
+      description: 'Looking for a kind caregiver to help with daily activities.',
+      careType: CareSpecialty.ELDERLY_CARE,
+      locationCity: 'Bogota',
+      locationZone: 'Chapinero',
+      startDate: '2026-12-01',
+      endDate: '2026-12-31',
+      requiredSchedule: [{ day: DayOfWeek.MONDAY, shifts: [ShiftType.MORNING] }],
+      budgetMin: 25,
+      budgetMax: 35,
+    };
+
+    it('should throw BadRequestException if budgetMax < budgetMin', async () => {
+      await expect(
+        service.bulkCreate('client-uuid-1', {
+          offers: [
+            {
+              ...validOfferItem,
+              budgetMin: 50,
+              budgetMax: 20,
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if dates are invalid or in past', async () => {
+      await expect(
+        service.bulkCreate('client-uuid-1', {
+          offers: [
+            {
+              ...validOfferItem,
+              startDate: '2020-01-01',
+              endDate: '2020-01-10',
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should create multiple job offers in a transaction', async () => {
+      const result = await service.bulkCreate('client-uuid-1', {
+        offers: [
+          validOfferItem,
+          {
+            ...validOfferItem,
+            title: 'Second Offer For Weekend Care',
+          },
+        ],
+      });
+
+      expect(queryRunner.connect).toHaveBeenCalled();
+      expect(queryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockManager.create).toHaveBeenCalledTimes(2);
+      expect(mockManager.save).toHaveBeenCalledTimes(2);
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
+      expect(result.count).toBe(2);
+      expect(result.jobOffers).toHaveLength(2);
+    });
+
+    it('should rollback transaction on error', async () => {
+      mockManager.save.mockRejectedValueOnce(new Error('Insert error'));
+
+      await expect(
+        service.bulkCreate('client-uuid-1', {
+          offers: [validOfferItem],
+        }),
+      ).rejects.toThrow('Insert error');
+
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
     });
   });
 });

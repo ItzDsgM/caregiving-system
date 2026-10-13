@@ -10,6 +10,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
+import { BulkRegisterDto } from './dtos/bulk-register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
@@ -28,6 +29,16 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email already registered' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('bulk-register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register multiple Caregiver or Client users in a single batch' })
+  @ApiResponse({ status: 201, description: 'Batch of users successfully created' })
+  @ApiResponse({ status: 400, description: 'Invalid batch input, duplicate emails, or Admin registration attempt' })
+  @ApiResponse({ status: 409, description: 'One or more emails are already registered' })
+  async bulkRegister(@Body() bulkDto: BulkRegisterDto) {
+    return this.authService.bulkRegister(bulkDto);
   }
 
   @Post('login')

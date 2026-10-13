@@ -9,12 +9,17 @@ import { VerificationStatus } from '../common/enums/verification-status.enum';
 
 describe('AdminController', () => {
   let controller: AdminController;
-  let service: Record<'getPendingDocuments' | 'verifyDocument' | 'updateUserStatus', jest.Mock>;
+  let service: Record<
+    'getPendingDocuments' | 'verifyDocument' | 'bulkVerifyDocuments' | 'bulkCreateUsers' | 'updateUserStatus',
+    jest.Mock
+  >;
 
   beforeEach(() => {
     service = {
       getPendingDocuments: jest.fn(),
       verifyDocument: jest.fn(),
+      bulkVerifyDocuments: jest.fn(),
+      bulkCreateUsers: jest.fn(),
       updateUserStatus: jest.fn(),
     };
     controller = new AdminController(service as unknown as AdminService);
@@ -29,6 +34,20 @@ describe('AdminController', () => {
     const dto = { status: VerificationStatus.APPROVED };
     await controller.verifyDocument('doc-1', dto);
     expect(service.verifyDocument).toHaveBeenCalledWith('doc-1', dto);
+  });
+
+  it('bulkVerifyDocuments should delegate DTO to service', async () => {
+    const dto = { items: [{ id: 'doc-1', status: VerificationStatus.APPROVED }] };
+    service.bulkVerifyDocuments.mockResolvedValue({ count: 1, results: [] });
+    await expect(controller.bulkVerifyDocuments(dto)).resolves.toEqual({ count: 1, results: [] });
+    expect(service.bulkVerifyDocuments).toHaveBeenCalledWith(dto);
+  });
+
+  it('bulkCreateUsers should delegate DTO to service', async () => {
+    const dto = { users: [] };
+    service.bulkCreateUsers.mockResolvedValue({ count: 0, users: [] });
+    await expect(controller.bulkCreateUsers(dto)).resolves.toEqual({ count: 0, users: [] });
+    expect(service.bulkCreateUsers).toHaveBeenCalledWith(dto);
   });
 
   it('updateUserStatus should pass id and DTO', async () => {

@@ -3,15 +3,19 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { CaregiverDocument } from '../caregiver-profiles/entities/caregiver-document.entity';
 import { CaregiverProfile } from '../caregiver-profiles/entities/caregiver-profile.entity';
 import { User } from '../users/entities/user.entity';
 import { JobOffer } from '../job-offers/entities/job-offer.entity';
 import { VerifyDocumentDto } from './dtos/verify-document.dto';
 import { UpdateUserStatusDto } from './dtos/update-user-status.dto';
+import { BulkCreateUsersDto } from './dtos/bulk-create-users.dto';
+import { BulkVerifyDocumentsDto } from './dtos/bulk-verify-documents.dto';
 import { VerificationStatus } from '../common/enums/verification-status.enum';
 import { DocumentType } from '../common/enums/document-type.enum';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -28,6 +32,7 @@ export class AdminService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(JobOffer)
     private readonly jobOfferRepository: Repository<JobOffer>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async getPendingDocuments() {
@@ -163,5 +168,98 @@ export class AdminService {
     }
 
     return this.userRepository.save(user);
+  }
+
+  async bulkCreateUsers(
+    bulkDto: BulkCreateUsersDto,
+  ): Promise<{ count: number; users: Omit<User, 'password'>[] }> {
+    const emails = bulkDto.users.map((u) => u.email.toLowerCase());
+    const uniqueEmails = new Set(emails);
+    if (uniqueEmails.size !== emails.length) {
+      throw new BadRequestException('Duplicate emails found within the creation payload');
+    }
+
+    for (const dto of bulkDto.users) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException(`Email "${dto.email}" is already registered`);
+      }
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const createdUsers: User[] = [];
+
+      for (const dto of bulkDto.users) {
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const user = queryRunner.manager.create(User, {
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
+          role: dto.role,
+          isActive: true,
+        });
+
+        const savedUser = await queryRunner.manager.save(user);
+
+        if (dto.role === UserRole.CAREGIVER) {
+          const caregiverProfile = queryRunner.manager.create(CaregiverProfile, {
+            userId: savedUser.id,
+          });
+          await queryRunner.manager.save(caregiverProfile);
+        }
+
+        createdUsers.push(savedUser);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        count: createdUsers.length,
+        users: createdUsers.map((u) => {
+          const { password: _password, ...sanitized } = u;
+          return sanitized;
+        }),
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async bulkVerifyDocuments(bulkDto: BulkVerifyDocumentsDto) {
+    for (const item of bulkDto.items) {
+      if (
+        item.status === VerificationStatus.REJECTED &&
+        (!item.adminNotes || item.adminNotes.trim().length === 0)
+      ) {
+        throw new BadRequestException(
+          `adminNotes is required when rejecting document "${item.id}"`,
+        );
+      }
+    }
+
+    const results = [];
+    for (const item of bulkDto.items) {
+      const verified = await this.verifyDocument(item.id, {
+        status: item.status,
+        adminNotes: item.adminNotes,
+      });
+      results.push(verified);
+    }
+
+    return {
+      count: results.length,
+      documents: results,
+    };
   }
 }

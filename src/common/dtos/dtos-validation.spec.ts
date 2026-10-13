@@ -18,6 +18,10 @@ import { RespondContactRequestDto } from '../../contact-requests/dtos/respond-co
 import { CreateReviewDto } from '../../reviews/dtos/create-review.dto';
 import { VerifyDocumentDto } from '../../admin/dtos/verify-document.dto';
 import { UpdateUserStatusDto } from '../../admin/dtos/update-user-status.dto';
+import { BulkRegisterDto } from '../../auth/dtos/bulk-register.dto';
+import { BulkCreateUsersDto } from '../../admin/dtos/bulk-create-users.dto';
+import { BulkVerifyDocumentsDto } from '../../admin/dtos/bulk-verify-documents.dto';
+import { BulkCreateJobOffersDto } from '../../job-offers/dtos/bulk-create-job-offers.dto';
 import { PaginationDto } from './pagination.dto';
 import { UserRole } from '../enums/user-role.enum';
 import { CareSpecialty } from '../enums/care-specialty.enum';
@@ -507,6 +511,80 @@ describe('DTO validation (global ValidationPipe contract)', () => {
       await messagesOf(UpdateUserStatusDto, {
         isActive: false,
         suspensionReason: 'r'.repeat(501),
+      });
+    });
+  });
+
+  describe('Bulk DTOs', () => {
+    const validRegisterItem = {
+      email: 'user@example.com',
+      password: 'Password123',
+      firstName: 'Maria',
+      lastName: 'Lopez',
+      phone: '+573001234567',
+      role: UserRole.CLIENT,
+    };
+
+    const validOfferItem = {
+      title: 'Elderly Care Assistant Needed',
+      description: 'Need compassionate care assistance during weekdays.',
+      careType: CareSpecialty.ELDERLY_CARE,
+      locationCity: 'Bogota',
+      locationZone: 'Chapinero',
+      startDate: '2026-12-01',
+      endDate: '2026-12-31',
+      requiredSchedule: [{ day: DayOfWeek.MONDAY, shifts: [ShiftType.MORNING] }],
+      budgetMin: 30,
+      budgetMax: 50,
+    };
+
+    it('BulkRegisterDto: should validate users array bounds and elements', async () => {
+      await expect(
+        validate(BulkRegisterDto, { users: [validRegisterItem] }),
+      ).resolves.toBeDefined();
+      await messagesOf(BulkRegisterDto, { users: [] }); // Min size 1
+      await messagesOf(BulkRegisterDto, { users: 'not-an-array' });
+      await messagesOf(BulkRegisterDto, { users: [{ ...validRegisterItem, email: 'invalid-email' }] });
+    });
+
+    it('BulkCreateUsersDto: should validate users array and nested item attributes', async () => {
+      await expect(
+        validate(BulkCreateUsersDto, { users: [validRegisterItem] }),
+      ).resolves.toBeDefined();
+      await messagesOf(BulkCreateUsersDto, { users: [] });
+      await messagesOf(BulkCreateUsersDto, { users: [{ ...validRegisterItem, role: 'SUPERUSER' }] });
+      await messagesOf(BulkCreateUsersDto, { users: [{ ...validRegisterItem, password: 'short' }] });
+    });
+
+    it('BulkVerifyDocumentsDto: should validate items array and verification statuses', async () => {
+      const validDocItem = {
+        id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        status: VerificationStatus.APPROVED,
+      };
+
+      await expect(
+        validate(BulkVerifyDocumentsDto, { items: [validDocItem] }),
+      ).resolves.toBeDefined();
+      await messagesOf(BulkVerifyDocumentsDto, { items: [] });
+      await messagesOf(BulkVerifyDocumentsDto, {
+        items: [{ id: 'not-uuid', status: VerificationStatus.APPROVED }],
+      });
+      await messagesOf(BulkVerifyDocumentsDto, {
+        items: [{ id: validDocItem.id, status: VerificationStatus.PENDING }],
+      });
+      await messagesOf(BulkVerifyDocumentsDto, {
+        items: [{ id: validDocItem.id, status: VerificationStatus.REJECTED, adminNotes: 'x'.repeat(501) }],
+      });
+    });
+
+    it('BulkCreateJobOffersDto: should validate offers array bounds and nested elements', async () => {
+      await expect(
+        validate(BulkCreateJobOffersDto, { offers: [validOfferItem] }),
+      ).resolves.toBeDefined();
+      await messagesOf(BulkCreateJobOffersDto, { offers: [] });
+      await messagesOf(BulkCreateJobOffersDto, { offers: 'not-array' });
+      await messagesOf(BulkCreateJobOffersDto, {
+        offers: [{ ...validOfferItem, title: 'short' }],
       });
     });
   });

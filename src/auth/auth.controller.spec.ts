@@ -10,12 +10,13 @@ import { ResetPasswordDto } from './dtos/reset-password.dto';
 describe('AuthController', () => {
   let controller: AuthController;
   let service: jest.Mocked<
-    Pick<AuthService, 'register' | 'login' | 'forgotPassword' | 'resetPassword'>
+    Pick<AuthService, 'register' | 'bulkRegister' | 'login' | 'forgotPassword' | 'resetPassword'>
   >;
 
   beforeEach(() => {
     service = {
       register: jest.fn(),
+      bulkRegister: jest.fn(),
       login: jest.fn(),
       forgotPassword: jest.fn(),
       resetPassword: jest.fn(),
@@ -29,6 +30,14 @@ describe('AuthController', () => {
 
     await expect(controller.register(dto)).resolves.toEqual({ id: 'u1' });
     expect(service.register).toHaveBeenCalledWith(dto);
+  });
+
+  it('bulkRegister should delegate to the service and return its result', async () => {
+    const dto = { users: [] };
+    service.bulkRegister.mockResolvedValue({ count: 0, users: [] });
+
+    await expect(controller.bulkRegister(dto)).resolves.toEqual({ count: 0, users: [] });
+    expect(service.bulkRegister).toHaveBeenCalledWith(dto);
   });
 
   it('login should delegate to the service', async () => {
@@ -58,6 +67,7 @@ describe('AuthController', () => {
   it('should expose the documented HTTP status codes (201 register, 200 others)', () => {
     const code = (fn: object) => Reflect.getMetadata(HTTP_CODE_METADATA, fn);
     expect(code(AuthController.prototype.register)).toBe(HttpStatus.CREATED);
+    expect(code(AuthController.prototype.bulkRegister)).toBe(HttpStatus.CREATED);
     expect(code(AuthController.prototype.login)).toBe(HttpStatus.OK);
     expect(code(AuthController.prototype.forgotPassword)).toBe(HttpStatus.OK);
     expect(code(AuthController.prototype.resetPassword)).toBe(HttpStatus.OK);

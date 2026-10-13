@@ -45,6 +45,19 @@ describe('CareConnect API (e2e Complete Lifecycle)', () => {
     if (dataSource?.isInitialized) {
       try {
         await dataSource.query('TRUNCATE TABLE "users" RESTART IDENTITY CASCADE');
+        const passwordHash = await bcrypt.hash('AdminSecret123!', 10);
+        const userRepo = dataSource.getRepository(User);
+        const admin = userRepo.create({
+          id: 'a0000000-0000-0000-0000-000000000001',
+          email: 'admin@careconnect.com',
+          password: passwordHash,
+          firstName: 'System',
+          lastName: 'Admin',
+          phone: '+573110000000',
+          role: UserRole.ADMIN,
+          isActive: true,
+        });
+        await userRepo.save(admin);
       } catch {
         // ignore
       }
@@ -450,6 +463,140 @@ describe('CareConnect API (e2e Complete Lifecycle)', () => {
         .get('/api/v1/users/me')
         .set('Authorization', `Bearer ${caregiverToken}`)
         .expect(403);
+    });
+  });
+
+  describe('8. Bulk Operations (Batch Creation, Provisioning & Moderation)', () => {
+    it('POST /api/v1/auth/bulk-register - should register multiple users in batch', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/bulk-register')
+        .send({
+          users: [
+            {
+              email: 'bulk.caregiver1@example.com',
+              password: 'Password123!',
+              firstName: 'Bulk',
+              lastName: 'Caregiver1',
+              phone: '+573007771122',
+              role: UserRole.CAREGIVER,
+            },
+            {
+              email: 'bulk.client1@example.com',
+              password: 'Password123!',
+              firstName: 'Bulk',
+              lastName: 'Client1',
+              phone: '+573007773344',
+              role: UserRole.CLIENT,
+            },
+          ],
+        })
+        .expect(201);
+
+      expect(res.body.count).toBe(2);
+      expect(res.body.users).toHaveLength(2);
+      expect(res.body.users[0]).not.toHaveProperty('password');
+      expect(res.body.users[1]).not.toHaveProperty('password');
+    });
+
+    it('POST /api/v1/job-offers/bulk - CLIENT should create multiple job offers in a single transaction', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/job-offers/bulk')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({
+          offers: [
+            {
+              title: 'Weekend elderly companion needed',
+              description: 'Seeking a warm caregiver to accompany my grandmother during weekends.',
+              careType: CareSpecialty.ELDERLY_CARE,
+              locationCity: 'Bogota',
+              locationZone: 'Usaquen',
+              startDate: '2026-12-01',
+              endDate: '2026-12-31',
+              requiredSchedule: [
+                { day: 'SATURDAY', shifts: ['MORNING'] },
+              ],
+              budgetMin: 35,
+              budgetMax: 50,
+            },
+            {
+              title: 'Weekday afternoon child tutoring and care',
+              description: 'Looking for child care assistance with elementary school homework and snacks.',
+              careType: CareSpecialty.CHILD_CARE,
+              locationCity: 'Bogota',
+              locationZone: 'Chapinero',
+              startDate: '2026-12-05',
+              endDate: '2026-12-25',
+              requiredSchedule: [
+                { day: 'MONDAY', shifts: ['AFTERNOON'] },
+              ],
+              budgetMin: 25,
+              budgetMax: 40,
+            },
+          ],
+        })
+        .expect(201);
+
+      expect(res.body.count).toBe(2);
+      expect(res.body.jobOffers).toHaveLength(2);
+      expect(res.body.jobOffers[0].status).toBe('OPEN');
+      expect(res.body.jobOffers[1].status).toBe('OPEN');
+    });
+
+    it('POST /api/v1/admin/users/bulk - ADMIN should provision multiple users with role-specific setup', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/admin/users/bulk')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          users: [
+            {
+              email: 'admin.bulk.caregiver@example.com',
+              password: 'Password123!',
+              firstName: 'BulkAdmin',
+              lastName: 'Caregiver',
+              phone: '+573118889900',
+              role: UserRole.CAREGIVER,
+            },
+            {
+              email: 'admin.bulk.client@example.com',
+              password: 'Password123!',
+              firstName: 'BulkAdmin',
+              lastName: 'Client',
+              phone: '+573118889911',
+              role: UserRole.CLIENT,
+            },
+          ],
+        })
+        .expect(201);
+
+      expect(res.body.count).toBe(2);
+      expect(res.body.users).toHaveLength(2);
+      expect(res.body.users[0].email).toBe('admin.bulk.caregiver@example.com');
+    });
+
+    it('PATCH /api/v1/admin/documents/bulk-verify - ADMIN should batch verify documents', async () => {
+      const pendingRes = await request(app.getHttpServer())
+        .get('/api/v1/admin/documents/pending')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      if (pendingRes.body.length > 0) {
+        const docToVerify = pendingRes.body[0];
+        const res = await request(app.getHttpServer())
+          .patch('/api/v1/admin/documents/bulk-verify')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({
+            items: [
+              {
+                id: docToVerify.id,
+                status: 'APPROVED',
+              },
+            ],
+          })
+          .expect(200);
+
+        expect(res.body.count).toBe(1);
+        expect(res.body.documents[0].verificationStatus).toBe('APPROVED');
+      }
     });
   });
 });

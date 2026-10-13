@@ -11,13 +11,17 @@ import { User } from '../users/entities/user.entity';
 
 describe('JobOffersController', () => {
   let controller: JobOffersController;
-  let offers: Record<'create' | 'getMyOffers' | 'findPublicOffers' | 'findById' | 'update' | 'updateStatus', jest.Mock>;
+  let offers: Record<
+    'create' | 'bulkCreate' | 'getMyOffers' | 'findPublicOffers' | 'findById' | 'update' | 'updateStatus',
+    jest.Mock
+  >;
   let applications: Record<'apply' | 'findByJobOffer', jest.Mock>;
   const user = { id: 'user-1' } as User;
 
   beforeEach(() => {
     offers = {
       create: jest.fn(),
+      bulkCreate: jest.fn(),
       getMyOffers: jest.fn(),
       findPublicOffers: jest.fn(),
       findById: jest.fn(),
@@ -35,6 +39,13 @@ describe('JobOffersController', () => {
     const dto = { title: 't' } as never;
     await controller.create(user, dto);
     expect(offers.create).toHaveBeenCalledWith('user-1', dto);
+  });
+
+  it('bulkCreate should attach client id and pass bulk DTO', async () => {
+    const dto = { offers: [] } as never;
+    offers.bulkCreate.mockResolvedValue({ count: 0, jobOffers: [] });
+    await expect(controller.bulkCreate(user, dto)).resolves.toEqual({ count: 0, jobOffers: [] });
+    expect(offers.bulkCreate).toHaveBeenCalledWith('user-1', dto);
   });
 
   it('getMyOffers should scope to the client', async () => {
@@ -79,7 +90,7 @@ describe('JobOffersController', () => {
     expect(guards(p.findPublicOffers)).toBeUndefined();
     expect(guards(p.findById)).toBeUndefined();
 
-    for (const fn of [p.create, p.getMyOffers, p.getApplications, p.update, p.updateStatus]) {
+    for (const fn of [p.create, p.bulkCreate, p.getMyOffers, p.getApplications, p.update, p.updateStatus]) {
       expect(guards(fn)).toEqual([JwtAuthGuard, RolesGuard]);
       expect(roles(fn)).toEqual([UserRole.CLIENT]);
     }

@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,6 +23,12 @@ describe('AdminService', () => {
   let profileRepo: jest.Mocked<Partial<Repository<CaregiverProfile>>>;
   let userRepo: jest.Mocked<Partial<Repository<User>>>;
   let jobOfferRepo: jest.Mocked<Partial<Repository<JobOffer>>>;
+  let dataSource: jest.Mocked<Partial<DataSource>>;
+  let queryRunner: jest.Mocked<Partial<QueryRunner>>;
+  let mockManager: {
+    create: jest.Mock;
+    save: jest.Mock;
+  };
 
   const mockCaregiverUser: User = {
     id: 'caregiver-uuid-1',
@@ -94,6 +101,32 @@ describe('AdminService', () => {
       update: jest.fn().mockResolvedValue({ affected: 2 } as any),
     };
 
+    mockManager = {
+      create: jest.fn((entityClass, data) => {
+        if (entityClass === User) {
+          return { id: 'created-user-id', ...data } as User;
+        }
+        if (entityClass === CaregiverProfile) {
+          return { id: 'created-profile-id', ...data } as CaregiverProfile;
+        }
+        return data;
+      }),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+
+    queryRunner = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager: mockManager as any,
+    };
+
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(queryRunner as QueryRunner),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminService,
@@ -112,6 +145,10 @@ describe('AdminService', () => {
         {
           provide: getRepositoryToken(JobOffer),
           useValue: jobOfferRepo,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
       ],
     }).compile();
@@ -349,6 +386,148 @@ describe('AdminService', () => {
         service.updateUserStatus('client-uuid-1', { isActive: false, suspensionReason: '   ' }),
       ).rejects.toThrow(BadRequestException);
       expect(userRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkCreateUsers', () => {
+    it('should throw BadRequestException if duplicate emails exist within the payload', async () => {
+      await expect(
+        service.bulkCreateUsers({
+          users: [
+            {
+              email: 'duplicate@example.com',
+              password: 'Password123',
+              firstName: 'Test1',
+              lastName: 'User1',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+            {
+              email: 'DUPLICATE@EXAMPLE.COM',
+              password: 'Password123',
+              firstName: 'Test2',
+              lastName: 'User2',
+              phone: '+573001234568',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException if any user is already registered', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValueOnce(mockClientUser);
+
+      await expect(
+        service.bulkCreateUsers({
+          users: [
+            {
+              email: mockClientUser.email,
+              password: 'Password123',
+              firstName: 'Test',
+              lastName: 'User',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should create users and caregiver profiles in transaction and return sanitized users', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.bulkCreateUsers({
+        users: [
+          {
+            email: 'newcaregiver@example.com',
+            password: 'Password123',
+            firstName: 'Caregiver',
+            lastName: 'One',
+            phone: '+573001234567',
+            role: UserRole.CAREGIVER,
+          },
+          {
+            email: 'newclient@example.com',
+            password: 'Password123',
+            firstName: 'Client',
+            lastName: 'One',
+            phone: '+573001234568',
+            role: UserRole.CLIENT,
+          },
+        ],
+      });
+
+      expect(queryRunner.connect).toHaveBeenCalled();
+      expect(queryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockManager.create).toHaveBeenCalledWith(User, expect.objectContaining({ email: 'newcaregiver@example.com' }));
+      expect(mockManager.create).toHaveBeenCalledWith(CaregiverProfile, expect.objectContaining({ userId: 'created-user-id' }));
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
+      expect(result.count).toBe(2);
+      expect(result.users[0]).not.toHaveProperty('password');
+      expect(result.users[1]).not.toHaveProperty('password');
+    });
+
+    it('should rollback and release transaction if an error occurs', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+      mockManager.save.mockRejectedValueOnce(new Error('Database write error'));
+
+      await expect(
+        service.bulkCreateUsers({
+          users: [
+            {
+              email: 'erroruser@example.com',
+              password: 'Password123',
+              firstName: 'Err',
+              lastName: 'User',
+              phone: '+573001234567',
+              role: UserRole.CLIENT,
+            },
+          ],
+        }),
+      ).rejects.toThrow('Database write error');
+
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkVerifyDocuments', () => {
+    it('should throw BadRequestException if a rejected item does not have adminNotes', async () => {
+      await expect(
+        service.bulkVerifyDocuments({
+          items: [
+            {
+              id: 'doc-uuid-1',
+              status: VerificationStatus.REJECTED,
+              adminNotes: '   ',
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should verify all documents and return results', async () => {
+      const spyVerify = jest.spyOn(service, 'verifyDocument').mockResolvedValue(mockDocument);
+
+      const result = await service.bulkVerifyDocuments({
+        items: [
+          {
+            id: 'doc-uuid-1',
+            status: VerificationStatus.APPROVED,
+          },
+          {
+            id: 'doc-uuid-2',
+            status: VerificationStatus.REJECTED,
+            adminNotes: 'Document illegible',
+          },
+        ],
+      });
+
+      expect(spyVerify).toHaveBeenCalledTimes(2);
+      expect(result.count).toBe(2);
+      expect(result.documents).toEqual([mockDocument, mockDocument]);
     });
   });
 });

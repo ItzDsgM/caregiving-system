@@ -5,9 +5,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { JobOffer } from './entities/job-offer.entity';
 import { CreateJobOfferDto } from './dtos/create-job-offer.dto';
+import { BulkCreateJobOffersDto } from './dtos/bulk-create-job-offers.dto';
 import { UpdateJobOfferDto } from './dtos/update-job-offer.dto';
 import { FilterJobOffersDto } from './dtos/filter-job-offers.dto';
 import { JobOfferStatus } from '../common/enums/job-offer-status.enum';
@@ -20,6 +21,7 @@ export class JobOffersService {
     @InjectRepository(JobOffer)
     private readonly jobOffersRepository: Repository<JobOffer>,
     private readonly applicationsService: ApplicationsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(clientId: string, dto: CreateJobOfferDto): Promise<JobOffer> {
@@ -33,6 +35,47 @@ export class JobOffersService {
     });
 
     return this.jobOffersRepository.save(offer);
+  }
+
+  async bulkCreate(
+    clientId: string,
+    dto: BulkCreateJobOffersDto,
+  ): Promise<{ count: number; jobOffers: JobOffer[] }> {
+    for (const offerDto of dto.offers) {
+      this.validateBudgets(offerDto.budgetMin, offerDto.budgetMax);
+      this.validateDates(offerDto.startDate, offerDto.endDate);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const createdOffers: JobOffer[] = [];
+
+      for (const offerDto of dto.offers) {
+        const offer = queryRunner.manager.create(JobOffer, {
+          ...offerDto,
+          clientId,
+          status: JobOfferStatus.OPEN,
+        });
+
+        const saved = await queryRunner.manager.save(offer);
+        createdOffers.push(saved);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        count: createdOffers.length,
+        jobOffers: createdOffers,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async getMyOffers(clientId: string): Promise<Array<JobOffer & { applicationsCount: number }>> {
