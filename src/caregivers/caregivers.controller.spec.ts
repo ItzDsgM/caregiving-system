@@ -58,6 +58,14 @@ describe('CaregiversController', () => {
       await expect(controller.uploadDocument(user, file, dto)).resolves.toEqual({ id: 'd1' });
       expect(service.uploadDocument).toHaveBeenCalledWith('user-1', file, dto);
     });
+
+    it('should delegate when a fallback file string is present without physical file', async () => {
+      const dto = { documentType: DocumentType.ID_CARD, file: 'archivo1.png' };
+      service.uploadDocument.mockResolvedValue({ id: 'd2' });
+
+      await expect(controller.uploadDocument(user, undefined as never, dto)).resolves.toEqual({ id: 'd2' });
+      expect(service.uploadDocument).toHaveBeenCalledWith('user-1', undefined, dto);
+    });
   });
 
   it('deleteDocument should pass user and document ids', async () => {

@@ -179,6 +179,25 @@ describe('CaregiversService', () => {
       ),
     ).rejects.toThrow(BadRequestException);
   });
+
+  it('should create and persist a document when uploadDto.file string fallback is provided', async () => {
+    (profileRepository.findOne as jest.Mock).mockResolvedValue(mockProfile);
+
+    const result = await caregiversService.uploadDocument(
+      'user-uuid-1',
+      undefined,
+      { documentType: DocumentType.ID_CARD, file: 'archivo1.png' },
+    );
+
+    expect(documentRepository.create).toHaveBeenCalledWith({
+      caregiverProfileId: mockProfile.id,
+      documentType: DocumentType.ID_CARD,
+      fileUrl: '/uploads/documents/archivo1.png',
+      verificationStatus: VerificationStatus.PENDING,
+    });
+    expect(documentRepository.save).toHaveBeenCalled();
+    expect(result.verificationStatus).toBe(VerificationStatus.PENDING);
+  });
   });
 
   describe('deleteDocument', () => {

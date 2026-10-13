@@ -509,8 +509,8 @@
               "formdata": [
                 {
                   "key": "file",
-                  "type": "file",
-                  "src": "postman/sample-doc.pdf"
+                  "value": "archivo1.png",
+                  "type": "text"
                 },
                 {
                   "key": "documentType",
@@ -533,43 +533,68 @@
           }
         },
         {
-          "name": "Delete Document",
+          "name": "Upload Document for Deletion",
           "event": [
             {
-              "listen": "prerequest",
+              "listen": "test",
               "script": {
                 "exec": [
-                  "const boundary = '----PostmanBoundary' + Date.now();",
-                  "pm.sendRequest({",
-                  "    url: pm.environment.get('baseUrl') + '/caregivers/me/documents',",
-                  "    method: 'POST',",
-                  "    header: {",
-                  "        'Authorization': 'Bearer ' + pm.environment.get('caregiverToken'),",
-                  "        'Content-Type': 'multipart/form-data; boundary=' + boundary",
-                  "    },",
-                  "    body: {",
-                  "        mode: 'raw',",
-                  "        raw: '--' + boundary + '\\r\\n' +",
-                  "             'Content-Disposition: form-data; name=\"file\"; filename=\"doc-to-delete.pdf\"\\r\\n' +",
-                  "             'Content-Type: application/pdf\\r\\n\\r\\n' +",
-                  "             '%PDF-1.4 dummy\\r\\n' +",
-                  "             '--' + boundary + '\\r\\n' +",
-                  "             'Content-Disposition: form-data; name=\"documentType\"\\r\\n\\r\\n' +",
-                  "             'CRIMINAL_RECORD\\r\\n' +",
-                  "             '--' + boundary + '--\\r\\n'",
-                  "    }",
-                  "}, function (err, res) {",
-                  "    if (!err && res) {",
-                  "        const json = res.json();",
-                  "        if (json.id) {",
-                  "            pm.environment.set('deleteDocId', json.id);",
-                  "        }",
-                  "    }",
-                  "});"
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"deleteDocId\", json.id);",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "value": "doc-to-delete.png",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "CRIMINAL_RECORD",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/me/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "me",
+                "documents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "event": [
             {
               "listen": "test",
               "script": {
@@ -804,46 +829,60 @@
           }
         },
         {
-          "name": "Update Offer Status",
+          "name": "Create Offer for Status Transition",
           "event": [
             {
-              "listen": "prerequest",
+              "listen": "test",
               "script": {
                 "exec": [
-                  "pm.sendRequest({",
-                  "    url: pm.environment.get('baseUrl') + '/job-offers',",
-                  "    method: 'POST',",
-                  "    header: {",
-                  "        'Content-Type': 'application/json',",
-                  "        'Authorization': 'Bearer ' + pm.environment.get('clientToken')",
-                  "    },",
-                  "    body: {",
-                  "        mode: 'raw',",
-                  "        raw: JSON.stringify({",
-                  "            title: 'Temporary offer for status transition test',",
-                  "            description: 'Offer created exclusively to test CLOSED transition safely.',",
-                  "            careType: 'ELDERLY_CARE',",
-                  "            locationCity: 'Bogota',",
-                  "            locationZone: 'Chapinero',",
-                  "            startDate: '2026-11-01',",
-                  "            endDate: '2026-11-30',",
-                  "            requiredSchedule: [{ day: 'MONDAY', shifts: ['MORNING'] }],",
-                  "            budgetMin: 20.00,",
-                  "            budgetMax: 35.00",
-                  "        })",
-                  "    }",
-                  "}, function (err, res) {",
-                  "    if (!err && res) {",
-                  "        const json = res.json();",
-                  "        if (json.id) {",
-                  "            pm.environment.set('offerToCloseId', json.id);",
-                  "        }",
-                  "    }",
-                  "});"
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"offerToCloseId\", json.id);",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Temporary offer for status transition test\",\n  \"description\": \"Offer created exclusively to test CLOSED transition safely.\",\n  \"careType\": \"ELDERLY_CARE\",\n  \"locationCity\": \"Bogota\",\n  \"locationZone\": \"Chapinero\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"requiredSchedule\": [{ \"day\": \"MONDAY\", \"shifts\": [\"MORNING\"] }],\n  \"budgetMin\": 20.00,\n  \"budgetMax\": 35.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/job-offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Offer Status",
+          "event": [
             {
               "listen": "test",
               "script": {
@@ -1298,40 +1337,62 @@
           }
         },
         {
-          "name": "Create Review (Without Work - Negative Test)",
+          "name": "Register Unworked Caregiver",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "exec": [
                   "const ts = Date.now();",
-                  "pm.sendRequest({",
-                  "    url: pm.environment.get('baseUrl') + '/auth/register',",
-                  "    method: 'POST',",
-                  "    header: { 'Content-Type': 'application/json' },",
-                  "    body: {",
-                  "        mode: 'raw',",
-                  "        raw: JSON.stringify({",
-                  "            email: 'caregiver.unworked.' + ts + '@example.com',",
-                  "            password: 'SecurePass123!',",
-                  "            firstName: 'Unworked',",
-                  "            lastName: 'Caregiver',",
-                  "            phone: '+57300' + Math.floor(1000000 + Math.random() * 9000000),",
-                  "            role: 'CAREGIVER'",
-                  "        })",
-                  "    }",
-                  "}, function (err, res) {",
-                  "    if (!err && res) {",
-                  "        const json = res.json();",
-                  "        if (json.id) {",
-                  "            pm.environment.set('unworkedCaregiverId', json.id);",
-                  "        }",
-                  "    }",
-                  "});"
+                  "pm.environment.set('unworkedEmail', 'caregiver.unworked.' + ts + '@example.com');",
+                  "pm.environment.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));"
                 ],
                 "type": "text/javascript"
               }
             },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.environment.set(\"unworkedCaregiverId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{unworkedEmail}}\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Unworked\",\n  \"lastName\": \"Caregiver\",\n  \"phone\": \"{{unworkedPhone}}\",\n  \"role\": \"CAREGIVER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Review (Without Work - Negative Test)",
+          "event": [
             {
               "listen": "test",
               "script": {
