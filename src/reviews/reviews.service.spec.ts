@@ -27,6 +27,13 @@ describe('ReviewsService', () => {
   let contactRequestRepo: jest.Mocked<Partial<Repository<ContactRequest>>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
   let queryRunner: jest.Mocked<Partial<QueryRunner>>;
+  let mockManager: {
+    create: jest.Mock;
+    save: jest.Mock;
+    count: jest.Mock;
+    createQueryBuilder: jest.Mock;
+    update: jest.Mock;
+  };
   let eventEmitter: jest.Mocked<Partial<EventEmitter2>>;
 
   const mockClient: User = {
@@ -85,23 +92,25 @@ describe('ReviewsService', () => {
       emit: jest.fn(),
     };
 
+    mockManager = {
+      create: jest.fn().mockImplementation((entityClass, data) => ({ id: 'review-1', ...data })),
+      save: jest.fn().mockImplementation(async (entityClass, data) => data),
+      count: jest.fn().mockResolvedValue(1),
+      createQueryBuilder: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ avgRating: '4.80' }),
+      }),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+
     queryRunner = {
       connect: jest.fn().mockResolvedValue(undefined),
       startTransaction: jest.fn().mockResolvedValue(undefined),
       commitTransaction: jest.fn().mockResolvedValue(undefined),
       rollbackTransaction: jest.fn().mockResolvedValue(undefined),
       release: jest.fn().mockResolvedValue(undefined),
-      manager: {
-        create: jest.fn().mockImplementation((entityClass, data) => ({ id: 'review-1', ...data })),
-        save: jest.fn().mockImplementation(async (entityClass, data) => data),
-        count: jest.fn().mockResolvedValue(1),
-        createQueryBuilder: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getRawOne: jest.fn().mockResolvedValue({ avgRating: '4.80' }),
-        }),
-        update: jest.fn().mockResolvedValue({ affected: 1 }),
-      } as any,
+      manager: mockManager as any,
     };
 
     dataSource = {
@@ -168,8 +177,8 @@ describe('ReviewsService', () => {
 
       expect(queryRunner.connect).toHaveBeenCalled();
       expect(queryRunner.startTransaction).toHaveBeenCalled();
-      expect(queryRunner.manager.save).toHaveBeenCalled();
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      expect(mockManager.save).toHaveBeenCalled();
+      expect(mockManager.update).toHaveBeenCalledWith(
         CaregiverProfile,
         { userId: 'caregiver-1' },
         { totalReviews: 1, ratingAverage: 4.8 },
@@ -243,7 +252,7 @@ describe('ReviewsService', () => {
       (applicationRepo.findOne as jest.Mock).mockResolvedValue({ id: 'app-1' });
       (reviewRepo.findOne as jest.Mock).mockResolvedValue(null);
 
-      (queryRunner.manager.save as jest.Mock).mockRejectedValue(
+      mockManager.save.mockRejectedValue(
         new Error('Database connection lost'),
       );
 
