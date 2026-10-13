@@ -12,6 +12,24 @@ export class BulkRegisterDto {
   @ApiProperty({
     type: [RegisterDto],
     description: 'Array of user registration payloads to be created in bulk',
+    example: [
+      {
+        email: 'maria.caregiver@example.com',
+        password: 'Password123!',
+        firstName: 'Maria',
+        lastName: 'Lopez',
+        phone: '+573005551001',
+        role: 'CAREGIVER',
+      },
+      {
+        email: 'juan.client@example.com',
+        password: 'Password123!',
+        firstName: 'Juan',
+        lastName: 'Rodriguez',
+        phone: '+573005551002',
+        role: 'CLIENT',
+      },
+    ],
   })
   @IsArray({ message: 'users must be an array' })
   @ArrayNotEmpty({ message: 'users array must not be empty' })

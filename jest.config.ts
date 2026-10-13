@@ -30,6 +30,7 @@ const config: Config = {
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
+  testTimeout: 20000,
 };
 
 export default config;

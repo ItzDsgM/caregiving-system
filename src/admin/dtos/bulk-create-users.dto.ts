@@ -55,6 +55,24 @@ export class BulkCreateUsersDto {
   @ApiProperty({
     type: [AdminCreateUserItemDto],
     description: 'Array of user creation payloads for admin bulk provisioning',
+    example: [
+      {
+        email: 'carlos.admin.provisioned@example.com',
+        password: 'Password123!',
+        firstName: 'Carlos',
+        lastName: 'Perez',
+        phone: '+573005550001',
+        role: 'CAREGIVER',
+      },
+      {
+        email: 'diana.admin.provisioned@example.com',
+        password: 'Password123!',
+        firstName: 'Diana',
+        lastName: 'Gomez',
+        phone: '+573005550002',
+        role: 'CLIENT',
+      },
+    ],
   })
   @IsArray({ message: 'users must be an array' })
   @ArrayNotEmpty({ message: 'users array must not be empty' })

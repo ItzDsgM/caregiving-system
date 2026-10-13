@@ -10,9 +10,17 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
 
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type,Accept,Authorization',
+  });
+
   app.use(
     helmet({
       contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
 
@@ -59,7 +67,18 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/v1/docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document, {
+    customCss: `
+      .swagger-ui .curl-command { display: none !important; }
+      .swagger-ui .live-responses-table { margin-top: 10px; }
+      .swagger-ui .response-col_description__inner { margin-top: 5px; }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      requestSnippetsEnabled: false,
+    },
+  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

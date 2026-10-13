@@ -9,7 +9,7 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { VerifyDocumentDto } from './dtos/verify-document.dto';
 import { UpdateUserStatusDto } from './dtos/update-user-status.dto';
@@ -31,17 +31,125 @@ export class AdminController {
 
   @Get('documents/pending')
   @ApiOperation({ summary: 'List all caregiver verification documents with PENDING status' })
-  @ApiResponse({ status: 200, description: 'List of pending documents with candidate details' })
-  @ApiResponse({ status: 403, description: 'Forbidden for non-admin roles' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of pending documents with candidate details',
+    schema: {
+      example: [
+        {
+          id: 'c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+          caregiverId: '7b8c1e2d-3f4a-5b6c-7d8e-9f0a1b2c3d4e',
+          documentType: 'ID_CARD',
+          fileUrl: 'uploads/documents/id_sample.pdf',
+          verificationStatus: 'PENDING',
+          adminNotes: null,
+          uploadedAt: '2026-10-12T20:00:00.000Z',
+          caregiver: {
+            user: {
+              firstName: 'Carlos',
+              lastName: 'Mendoza',
+              email: 'carlos.mendoza@example.com',
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/pending',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden for non-admin roles',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/pending',
+      },
+    },
+  })
   async getPendingDocuments() {
     return this.adminService.getPendingDocuments();
   }
 
   @Patch('documents/:id/verify')
   @ApiOperation({ summary: 'Resolve verification status (APPROVED or REJECTED) for a document' })
-  @ApiResponse({ status: 200, description: 'Document status resolved, trust badge granted if eligible' })
-  @ApiResponse({ status: 400, description: 'adminNotes missing on rejection' })
-  @ApiResponse({ status: 403, description: 'Forbidden for non-admin roles' })
+  @ApiParam({
+    name: 'id',
+    description: 'CaregiverDocument UUID to audit',
+    example: 'c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Document status resolved, trust badge granted if eligible',
+    schema: {
+      example: {
+        id: 'c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+        verificationStatus: 'APPROVED',
+        adminNotes: 'National ID verified successfully against government registry.',
+        updatedAt: '2026-10-12T20:25:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'adminNotes missing on rejection',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'adminNotes is required when rejecting a document',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f/verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f/verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden for non-admin roles',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f/verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Document not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Document not found with id: c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f/verify',
+      },
+    },
+  })
   async verifyDocument(
     @Param('id') id: string,
     @Body() dto: VerifyDocumentDto,
@@ -51,27 +159,217 @@ export class AdminController {
 
   @Patch('documents/bulk-verify')
   @ApiOperation({ summary: 'Verify multiple documents in a single batch (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Documents verified and trust badges updated' })
-  @ApiResponse({ status: 400, description: 'Missing adminNotes for rejected documents' })
-  @ApiResponse({ status: 404, description: 'One or more documents not found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Documents verified and trust badges updated',
+    schema: {
+      example: {
+        count: 1,
+        documents: [
+          {
+            id: 'c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+            verificationStatus: 'APPROVED',
+            adminNotes: 'Government ID card verified.',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing adminNotes for rejected documents or invalid batch',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'adminNotes is required for all rejected documents',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/bulk-verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/bulk-verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden for non-admin roles',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/bulk-verify',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more documents not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'One or more documents not found in batch',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/documents/bulk-verify',
+      },
+    },
+  })
   async bulkVerifyDocuments(@Body() dto: BulkVerifyDocumentsDto) {
     return this.adminService.bulkVerifyDocuments(dto);
   }
 
   @Post('users/bulk')
   @ApiOperation({ summary: 'Provision multiple users in bulk (Admin only)' })
-  @ApiResponse({ status: 201, description: 'Batch of users successfully created' })
-  @ApiResponse({ status: 400, description: 'Invalid batch input or duplicate emails' })
-  @ApiResponse({ status: 409, description: 'One or more emails already registered' })
+  @ApiResponse({
+    status: 201,
+    description: 'Batch of users successfully created',
+    schema: {
+      example: {
+        count: 1,
+        users: [
+          {
+            id: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
+            email: 'carlos.admin.provisioned@example.com',
+            firstName: 'Carlos',
+            lastName: 'Perez',
+            role: 'CAREGIVER',
+            isActive: true,
+            createdAt: '2026-10-12T20:00:00.000Z',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid batch input or duplicate emails',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Duplicate emails found within provisioning batch',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/bulk',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/bulk',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden for non-admin roles',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/bulk',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'One or more emails already registered',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: 'One or more emails are already registered',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/bulk',
+      },
+    },
+  })
   async bulkCreateUsers(@Body() dto: BulkCreateUsersDto) {
     return this.adminService.bulkCreateUsers(dto);
   }
 
   @Patch('users/:id/status')
   @ApiOperation({ summary: 'Update user active status with cascading suspension effects' })
-  @ApiResponse({ status: 200, description: 'User status updated and cascading ripple effects applied' })
-  @ApiResponse({ status: 400, description: 'suspensionReason missing on deactivation' })
-  @ApiResponse({ status: 403, description: 'Forbidden to suspend administrator accounts' })
+  @ApiParam({
+    name: 'id',
+    description: 'Target User UUID',
+    example: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User status updated and cascading ripple effects applied',
+    schema: {
+      example: {
+        id: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
+        email: 'carlos.mendoza@example.com',
+        isActive: false,
+        suspensionReason:
+          'Account temporarily suspended due to repeated breach of user community guidelines.',
+        updatedAt: '2026-10-12T20:30:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'suspensionReason missing on deactivation',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'suspensionReason is required when suspending an account',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b/status',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b/status',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden to suspend administrator accounts',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Administrator accounts cannot be suspended',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b/status',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'User not found with id: 3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/admin/users/3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b/status',
+      },
+    },
+  })
   async updateUserStatus(
     @Param('id') id: string,
     @Body() dto: UpdateUserStatusDto,
