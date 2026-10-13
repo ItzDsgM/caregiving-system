@@ -1,13 +1,19 @@
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express, { Express, Request, Response } from 'express';
-import { AppModule, ObserveInstrument } from '../src/app.module';
-import { configureApp } from '../src/main';
+// Native dynamic import function that prevents TypeScript from compiling import() to require()
+const dynamicImport = new Function('m', 'return import(m)');
 
-const server: Express = express();
+let server: any;
 let isReady = false;
 
 async function bootstrap() {
+  const { NestFactory } = await dynamicImport('@nestjs/core');
+  const { ExpressAdapter } = await dynamicImport('@nestjs/platform-express');
+  const expressModule = await dynamicImport('express');
+  const express = expressModule.default || expressModule;
+  const { AppModule, ObserveInstrument } = await dynamicImport('../src/app.module');
+  const { configureApp } = await dynamicImport('../src/app.config');
+
+  server = express();
+
   const app = await NestFactory.create(
     AppModule,
     new ExpressAdapter(server),
@@ -21,7 +27,7 @@ async function bootstrap() {
   isReady = true;
 }
 
-export default async function handler(req: Request, res: Response) {
+export default async function handler(req: any, res: any) {
   if (!isReady) {
     await bootstrap();
   }
