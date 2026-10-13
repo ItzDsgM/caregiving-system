@@ -1039,6 +1039,36 @@
             },
             "url": { "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{caregiverId}}", "status"] }
           }
+        },
+        {
+          "name": "Reactivate User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"User isActive is restored to true\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.isActive).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{caregiverId}}", "status"] }
+          }
         }
       ]
     },
