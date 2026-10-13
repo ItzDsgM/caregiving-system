@@ -42,6 +42,13 @@ import { User } from '../users/entities/user.entity';
 export class CaregiversController {
   constructor(private readonly caregiversService: CaregiversService) {}
 
+  /**
+   * Searches the public catalog of verified, active caregivers.
+   * Supports filtering by city, specialty, price range, minimum rating, and sorting.
+   *
+   * @param searchDto - Query parameters for filtering and pagination.
+   * @returns Paginated list of sanitized caregiver profiles.
+   */
   @Get('search')
   @ApiOperation({ summary: 'Search and filter active verified caregivers' })
   @ApiResponse({
@@ -97,6 +104,13 @@ export class CaregiversController {
     return this.caregiversService.search(searchDto);
   }
 
+  /**
+   * Retrieves the full profile of the currently authenticated caregiver,
+   * including uploaded documents and verification statuses.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @returns Complete CaregiverProfile entity.
+   */
   @Get('me')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -167,6 +181,14 @@ export class CaregiversController {
     return this.caregiversService.getMyProfile(user.id);
   }
 
+  /**
+   * Updates bio, rates, specialties, geographic coverage, or availability schedules
+   * for the authenticated caregiver.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param updateDto - DTO with partial caregiver profile updates.
+   * @returns Updated CaregiverProfile entity.
+   */
   @Patch('me')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -237,6 +259,15 @@ export class CaregiversController {
     return this.caregiversService.updateMyProfile(user.id, updateDto);
   }
 
+  /**
+   * Uploads a verification document file (PDF, JPEG, or PNG up to 5MB)
+   * for the authenticated caregiver and marks it PENDING audit.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param file - Multipart uploaded file.
+   * @param uploadDto - DTO indicating document category.
+   * @returns Created CaregiverDocument in PENDING status.
+   */
   @Post('me/documents')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -323,6 +354,14 @@ export class CaregiversController {
     return this.caregiversService.uploadDocument(user.id, file, uploadDto);
   }
 
+  /**
+   * Deletes an unapproved document (PENDING or REJECTED) belonging to the authenticated caregiver.
+   * Rejects attempts to delete APPROVED documents.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param id - Document UUID to remove.
+   * @returns Success message confirmation.
+   */
   @Delete('me/documents/:id')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -394,6 +433,13 @@ export class CaregiversController {
     return this.caregiversService.deleteDocument(user.id, id);
   }
 
+  /**
+   * Retrieves the sanitized public profile of a caregiver by ID.
+   * Masks private contact data (phone/email) and exposes only APPROVED credentials.
+   *
+   * @param id - UUID of the caregiver profile or associated user.
+   * @returns Public caregiver profile object.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get public caregiver profile with privacy guard protection' })
   @ApiParam({

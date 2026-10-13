@@ -16,6 +16,13 @@ import { FilterZoneReportDto } from './dtos/filter-zone-report.dto';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
+  /**
+   * Generates analytical report on client modality demand and caregiver supply.
+   * Restricted to the ADMIN role.
+   *
+   * @param dto - Filters (category, careType, date range, city).
+   * @returns Detailed modality report.
+   */
   @Get('client-modality')
   @ApiOperation({
     summary:
@@ -77,6 +84,13 @@ export class ReportsController {
     return this.reportsService.getClientModalityReport(dto);
   }
 
+  /**
+   * Generates geographic report ranking city zones by service volume and completed care fulfillment.
+   * Restricted to the ADMIN role.
+   *
+   * @param dto - Filters (limit, city, careType, date ranges).
+   * @returns Top zones analytical report.
+   */
   @Get('top-zones')
   @ApiOperation({
     summary: 'Rank and retrieve the most served geographical zones and cities',
@@ -135,6 +149,13 @@ export class ReportsController {
     return this.reportsService.getTopZonesReport(dto);
   }
 
+  /**
+   * Retrieves platform-level executive dashboard metrics: total offers, active hires,
+   * predominant modality market share, and top 5 served geographic zones.
+   * Restricted to the ADMIN role.
+   *
+   * @returns Executive KPI dashboard summary.
+   */
   @Get('summary')
   @ApiOperation({
     summary: 'Executive dashboard KPI overview',

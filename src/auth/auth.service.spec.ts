@@ -6,6 +6,7 @@ import {
   ConflictException,
   ForbiddenException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
@@ -17,6 +18,7 @@ import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { generateTotp } from './utils/totp.util';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -60,6 +62,8 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       findById: jest.fn(),
       findByResetToken: jest.fn(),
+      findByIdWith2faSecret: jest.fn(),
+      findByEmailWith2faSecret: jest.fn(),
       create: jest.fn(),
       save: jest.fn().mockImplementation(async (user) => user),
     };
@@ -472,6 +476,189 @@ describe('AuthService', () => {
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+  });
+
+  describe('Two-Factor Authentication (2FA) & Session Management', () => {
+    const testSecret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+    const mockUser: User = {
+      id: 'user-2fa-1',
+      email: 'twofactor@careconnect.com',
+      password: 'hashed-password',
+      firstName: 'Secure',
+      lastName: 'User',
+      phone: '+573001234567',
+      role: UserRole.CAREGIVER,
+      isActive: true,
+      isTwoFactorEnabled: false,
+      twoFactorSecret: null,
+      lastLogoutAt: null,
+      suspensionReason: null,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('should challenge for 2FA on login when isTwoFactorEnabled is true', async () => {
+      const hashedPassword = await bcrypt.hash('Password123!', 1);
+      const userWith2fa = {
+        ...mockUser,
+        password: hashedPassword,
+        isTwoFactorEnabled: true,
+      };
+      (usersService.findByEmail as jest.Mock).mockResolvedValue(userWith2fa);
+
+      const result = await authService.login({
+        email: mockUser.email,
+        password: 'Password123!',
+      });
+
+      expect(result).toHaveProperty('isTwoFactorRequired', true);
+      expect(result).toHaveProperty('email', mockUser.email);
+    });
+
+    it('should generate a 2FA secret and otpauthUrl', async () => {
+      (usersService.findById as jest.Mock).mockResolvedValue({ ...mockUser });
+
+      const result = await authService.generateTwoFactorSecret(mockUser.id);
+
+      expect(result).toHaveProperty('secret');
+      expect(result).toHaveProperty('otpauthUrl');
+      expect(result.otpauthUrl).toContain('otpauth://totp/CareConnect:');
+      expect(usersService.save).toHaveBeenCalled();
+    });
+
+    it('should enable 2FA with a valid TOTP code', async () => {
+      const code = generateTotp(testSecret);
+      (usersService.findByIdWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        twoFactorSecret: testSecret,
+      });
+
+      const result = await authService.enableTwoFactor(mockUser.id, code);
+
+      expect(result.isTwoFactorEnabled).toBe(true);
+      expect(result.message).toContain('successfully enabled');
+    });
+
+    it('should throw BadRequestException when enabling 2FA without generated secret', async () => {
+      (usersService.findByIdWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        twoFactorSecret: null,
+      });
+
+      await expect(
+        authService.enableTwoFactor(mockUser.id, '123456'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when enabling 2FA with an invalid code', async () => {
+      (usersService.findByIdWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        twoFactorSecret: testSecret,
+      });
+
+      await expect(
+        authService.enableTwoFactor(mockUser.id, '000000'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should disable 2FA with a valid TOTP code', async () => {
+      const code = generateTotp(testSecret);
+      (usersService.findByIdWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isTwoFactorEnabled: true,
+        twoFactorSecret: testSecret,
+      });
+
+      const result = await authService.disableTwoFactor(mockUser.id, code);
+
+      expect(result.isTwoFactorEnabled).toBe(false);
+      expect(result.message).toContain('successfully disabled');
+    });
+
+    it('should throw BadRequestException when disabling 2FA if not enabled', async () => {
+      (usersService.findByIdWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isTwoFactorEnabled: false,
+        twoFactorSecret: null,
+      });
+
+      await expect(
+        authService.disableTwoFactor(mockUser.id, '123456'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should authenticate 2FA challenge and return JWT token', async () => {
+      const code = generateTotp(testSecret);
+      (usersService.findByEmailWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isTwoFactorEnabled: true,
+        twoFactorSecret: testSecret,
+      });
+
+      const result = await authService.authenticateTwoFactor({
+        email: mockUser.email,
+        code,
+      });
+
+      expect(result).toHaveProperty('access_token', 'signed-jwt-token');
+      expect(result.user.email).toBe(mockUser.email);
+    });
+
+    it('should throw UnauthorizedException if 2FA code is invalid during authenticate', async () => {
+      (usersService.findByEmailWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isTwoFactorEnabled: true,
+        twoFactorSecret: testSecret,
+      });
+
+      await expect(
+        authService.authenticateTwoFactor({
+          email: mockUser.email,
+          code: '000000',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if user does not exist during 2FA authenticate', async () => {
+      (usersService.findByEmailWith2faSecret as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        authService.authenticateTwoFactor({
+          email: 'unknown@careconnect.com',
+          code: '123456',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw ForbiddenException if user is inactive during 2FA authenticate', async () => {
+      const code = generateTotp(testSecret);
+      (usersService.findByEmailWith2faSecret as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+        isTwoFactorEnabled: true,
+        twoFactorSecret: testSecret,
+      });
+
+      await expect(
+        authService.authenticateTwoFactor({
+          email: mockUser.email,
+          code,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should log out user and update lastLogoutAt timestamp', async () => {
+      const user = { ...mockUser };
+      (usersService.findById as jest.Mock).mockResolvedValue(user);
+
+      const result = await authService.logout(mockUser.id);
+
+      expect(result).toEqual({ message: 'Successfully logged out' });
+      expect(user.lastLogoutAt).toBeInstanceOf(Date);
+      expect(usersService.save).toHaveBeenCalled();
     });
   });
 });

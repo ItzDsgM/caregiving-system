@@ -8,10 +8,21 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+/**
+ * Global exception filter formatting all unhandled and HTTP exceptions into a standard JSON payload:
+ * `{ statusCode, message, timestamp, path }`.
+ * Catches TypeORM 22P02 invalid UUID syntax and maps it gracefully to 400 Bad Request.
+ */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
+  /**
+   * Intercepts thrown exceptions across the application lifecycle and generates uniform JSON responses.
+   *
+   * @param exception - The caught exception (HttpException, TypeORM error, or general Error).
+   * @param host - ArgumentsHost providing access to current HTTP request/response contexts.
+   */
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

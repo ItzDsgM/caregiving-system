@@ -27,6 +27,18 @@ export class ApplicationsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Submits a candidate application to an open job offer on behalf of the caregiver.
+   * Prevents multiple applications for the same job offer. Emits `application.created` event.
+   *
+   * @param caregiverId - UUID of the authenticated caregiver.
+   * @param jobOfferId - UUID of the target job offer.
+   * @param dto - Cover letter and optional custom proposed rate.
+   * @returns Newly created Application entity in PENDING status.
+   * @throws NotFoundException If the job offer does not exist.
+   * @throws BadRequestException If the job offer is not in OPEN status.
+   * @throws ConflictException If the caregiver has already applied to this offer.
+   */
   async apply(
     caregiverId: string,
     jobOfferId: string,
@@ -78,6 +90,16 @@ export class ApplicationsService {
     return savedApplication;
   }
 
+  /**
+   * Retrieves all candidate applications for a specific job offer.
+   * Enforces privacy protection: masks personal phone and email until an application is accepted.
+   *
+   * @param clientId - UUID of the client requesting the list (must match offer creator).
+   * @param jobOfferId - UUID of the job offer.
+   * @returns Array of sanitized application records with caregiver summaries.
+   * @throws NotFoundException If the job offer does not exist.
+   * @throws ForbiddenException If the requesting client does not own the job offer.
+   */
   async findByJobOffer(clientId: string, jobOfferId: string) {
     const jobOffer = await this.jobOfferRepository.findOne({
       where: { id: jobOfferId },
@@ -116,6 +138,17 @@ export class ApplicationsService {
     }));
   }
 
+  /**
+   * Updates an application status (ACCEPTED or REJECTED) by the job offer creator.
+   * If ACCEPTED, unlocks mutual contact details (email, phone, direct WhatsApp link) and emits event.
+   *
+   * @param clientId - UUID of the client owning the job offer.
+   * @param applicationId - UUID of the application record.
+   * @param status - Target status (ACCEPTED or REJECTED).
+   * @returns Updated application entity and unlocked contact details if accepted.
+   * @throws NotFoundException If the application does not exist.
+   * @throws ForbiddenException If the client does not own the parent job offer.
+   */
   async updateStatus(
     clientId: string,
     applicationId: string,
@@ -193,6 +226,13 @@ export class ApplicationsService {
     return { application: updated };
   }
 
+  /**
+   * Retrieves all applications submitted by the authenticated caregiver,
+   * including parent job offer details.
+   *
+   * @param caregiverId - UUID of the authenticated caregiver.
+   * @returns Array of Application entities with related JobOffer records.
+   */
   async getMyApplications(caregiverId: string) {
     return this.applicationRepository.find({
       where: { caregiverId },
@@ -201,6 +241,12 @@ export class ApplicationsService {
     });
   }
 
+  /**
+   * Counts the number of applications submitted for a particular job offer.
+   *
+   * @param jobOfferId - UUID of the target job offer.
+   * @returns Total count of applications.
+   */
   async countByJobOffer(jobOfferId: string): Promise<number> {
     return this.applicationRepository.count({
       where: { jobOfferId },

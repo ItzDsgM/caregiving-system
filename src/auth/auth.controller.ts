@@ -4,16 +4,20 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  UseGuards,
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
 import { BulkRegisterDto } from './dtos/bulk-register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { TwoFactorCodeDto, TwoFactorAuthenticateDto } from './dtos/two-factor.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -21,6 +25,13 @@ import { ResetPasswordDto } from './dtos/reset-password.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Registers a single Caregiver or Client user.
+   * Rejects ADMIN role injection attempts.
+   *
+   * @param registerDto - User registration payload.
+   * @returns Newly created sanitized user entity.
+   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new Caregiver or Client user' })
@@ -72,6 +83,13 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  /**
+   * Registers multiple users in a single atomic batch.
+   * Validates duplicate emails internally and against database before persisting.
+   *
+   * @param bulkDto - Batch registration payload containing an array of user payloads.
+   * @returns Total count and array of created sanitized users.
+   */
   @Post('bulk-register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register multiple Caregiver or Client users in a single batch' })
@@ -138,6 +156,13 @@ export class AuthController {
     return this.authService.bulkRegister(bulkDto);
   }
 
+  /**
+   * Authenticates user credentials and issues a signed JWT Bearer access token.
+   * Rejects suspended or inactive accounts with 403 Forbidden.
+   *
+   * @param loginDto - Credentials payload containing email and password.
+   * @returns Signed JWT access token and sanitized user profile.
+   */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate user and issue JWT bearer token' })
@@ -185,6 +210,13 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  /**
+   * Dispatches a 15-minute cryptographically secure recovery token if the account email exists.
+   * Protects against user enumeration attacks with generic confirmation.
+   *
+   * @param forgotPasswordDto - Payload containing the account email.
+   * @returns Generic confirmation message.
+   */
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Initiate password recovery flow' })
@@ -214,6 +246,13 @@ export class AuthController {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
+  /**
+   * Resets the account password using a valid, unexpired recovery token.
+   * Clears the recovery token upon success.
+   *
+   * @param resetPasswordDto - Payload containing the token and new password.
+   * @returns Confirmation message on password reset.
+   */
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset account password using recovery token' })
@@ -242,4 +281,130 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
   }
+
+  /**
+   * Generates a new 2FA secret and otpauth URI for the authenticated user.
+   *
+   * @param userId - Extracted UUID of the authenticated user.
+   * @returns Secret and otpauth URI suitable for scanning in authenticator apps.
+   */
+  @Post('2fa/generate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a new 2FA secret and otpauth URL for the current user' })
+  @ApiResponse({
+    status: 200,
+    description: '2FA secret generated successfully',
+    schema: {
+      example: {
+        secret: 'JBSWY3DPEHPK3PXP',
+        otpauthUrl: 'otpauth://totp/CareConnect:user%40test.com?secret=JBSWY3DPEHPK3PXP&issuer=CareConnect',
+      },
+    },
+  })
+  async generate2fa(@CurrentUser('id') userId: string) {
+    return this.authService.generateTwoFactorSecret(userId);
+  }
+
+  /**
+   * Verifies a 6-digit TOTP code and activates two-factor authentication.
+   *
+   * @param userId - Extracted UUID of the authenticated user.
+   * @param dto - DTO containing the 6-digit verification code.
+   * @returns Success confirmation.
+   */
+  @Post('2fa/enable')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify code and enable two-factor authentication' })
+  @ApiResponse({
+    status: 200,
+    description: 'Two-factor authentication successfully enabled',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid 2FA code or secret not generated',
+  })
+  async enable2fa(
+    @CurrentUser('id') userId: string,
+    @Body() dto: TwoFactorCodeDto,
+  ) {
+    return this.authService.enableTwoFactor(userId, dto.code);
+  }
+
+  /**
+   * Disables two-factor authentication after verifying a valid TOTP code.
+   *
+   * @param userId - Extracted UUID of the authenticated user.
+   * @param dto - DTO containing the 6-digit verification code.
+   * @returns Success confirmation.
+   */
+  @Post('2fa/disable')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify code and disable two-factor authentication' })
+  @ApiResponse({
+    status: 200,
+    description: 'Two-factor authentication successfully disabled',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid 2FA code or 2FA not enabled',
+  })
+  async disable2fa(
+    @CurrentUser('id') userId: string,
+    @Body() dto: TwoFactorCodeDto,
+  ) {
+    return this.authService.disableTwoFactor(userId, dto.code);
+  }
+
+  /**
+   * Completes two-factor authentication challenge during login.
+   * Issues standard signed JWT access token upon successful code validation.
+   *
+   * @param dto - Payload containing user email and 6-digit TOTP code.
+   * @returns Signed JWT access token and sanitized user profile.
+   */
+  @Post('2fa/authenticate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit 2FA code to complete login and obtain JWT access token' })
+  @ApiResponse({
+    status: 200,
+    description: '2FA authentication successful with JWT token',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid 2FA code or 2FA not enabled',
+  })
+  async authenticate2fa(@Body() dto: TwoFactorAuthenticateDto) {
+    return this.authService.authenticateTwoFactor(dto);
+  }
+
+  /**
+   * Logs out the user by invalidating tokens issued prior to the current timestamp.
+   *
+   * @param userId - Extracted UUID of the authenticated user.
+   * @returns Logout confirmation message.
+   */
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log out current user and invalidate active session tokens' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully logged out',
+    schema: {
+      example: {
+        message: 'Successfully logged out',
+      },
+    },
+  })
+  async logout(@CurrentUser('id') userId: string) {
+    return this.authService.logout(userId);
+  }
 }
+

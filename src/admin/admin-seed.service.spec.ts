@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { AdminSeedService } from './admin-seed.service';
 import { User } from '../users/entities/user.entity';
@@ -13,12 +13,26 @@ jest.mock('bcrypt', () => ({
 describe('AdminSeedService', () => {
   let service: AdminSeedService;
   let userRepo: jest.Mocked<Partial<Repository<User>>>;
+  let dataSource: jest.Mocked<Partial<DataSource>>;
 
   beforeEach(async () => {
     userRepo = {
       findOne: jest.fn(),
+      count: jest.fn().mockResolvedValue(5),
       create: jest.fn().mockImplementation((dto) => dto as User),
       save: jest.fn().mockImplementation(async (user) => user as User),
+    };
+
+    const mockEntityRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      find: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(2),
+      create: jest.fn().mockImplementation((dto) => dto),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+
+    dataSource = {
+      getRepository: jest.fn().mockReturnValue(mockEntityRepo),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +41,10 @@ describe('AdminSeedService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: userRepo,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
       ],
     }).compile();
@@ -75,6 +93,20 @@ describe('AdminSeedService', () => {
       });
       expect(userRepo.create).not.toHaveBeenCalled();
       expect(userRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('seedDatabase', () => {
+    it('should execute full database seed and return detailed entity summary', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.seedDatabase();
+
+      expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('counts');
+      expect(result.counts.caregivers).toBe(2);
+      expect(result.counts.clients).toBe(2);
+      expect(dataSource.getRepository).toHaveBeenCalled();
     });
   });
 });

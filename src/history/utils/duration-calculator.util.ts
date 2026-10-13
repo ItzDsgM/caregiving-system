@@ -6,6 +6,15 @@ export interface EngagementDuration {
   status: 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
 }
 
+/**
+ * Calculates duration and lifecycle state (SCHEDULED, ONGOING, COMPLETED) of a care engagement.
+ * Computes calendar days, human-readable formatting (e.g. "2 months 5 days"), and active status relative to reference date.
+ *
+ * @param startDateStr - ISO date string of engagement start.
+ * @param endDateStr - ISO date string of engagement end.
+ * @param currentDate - Reference date for determining active status (defaults to new Date()).
+ * @returns EngagementDuration object containing days, formatted description, and status.
+ */
 export function computeEngagementDuration(
   startDateStr: string,
   endDateStr: string,

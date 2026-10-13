@@ -75,6 +75,15 @@ export class HistoryService {
     private readonly applicationRepository: Repository<Application>,
   ) {}
 
+  /**
+   * Retrieves paginated service engagement history for a client, filtered to ACCEPTED applications.
+   * Computes engagement status (ACTIVE, COMPLETED, UPCOMING) and duration metrics.
+   * Enforces privacy guard by omitting direct phone and email from caregiver profiles.
+   *
+   * @param clientId - UUID of the authenticated client.
+   * @param dto - Filters (careType, status, date range, pagination).
+   * @returns Paginated history list of client engagements.
+   */
   async getClientHistory(
     clientId: string,
     dto: QueryHistoryDto,
@@ -162,6 +171,15 @@ export class HistoryService {
     };
   }
 
+  /**
+   * Retrieves paginated service engagement history for a caregiver, filtered to ACCEPTED applications.
+   * Computes engagement status (ACTIVE, COMPLETED, UPCOMING) and duration metrics.
+   * Enforces privacy guard by omitting direct client contact information.
+   *
+   * @param caregiverId - UUID of the authenticated caregiver.
+   * @param dto - Filters (careType, status, date range, pagination).
+   * @returns Paginated history list of caregiver engagements.
+   */
   async getCaregiverHistory(
     caregiverId: string,
     dto: QueryHistoryDto,
@@ -239,6 +257,15 @@ export class HistoryService {
     };
   }
 
+  /**
+   * Dispatches the history request to the appropriate method depending on user role (CLIENT or CAREGIVER).
+   *
+   * @param userId - UUID of the authenticated requester.
+   * @param role - Role of the requester (CLIENT or CAREGIVER).
+   * @param dto - Filters and pagination parameters.
+   * @returns Paginated history result.
+   * @throws ForbiddenException If requested by a user without CLIENT or CAREGIVER role.
+   */
   async getMyHistory(userId: string, role: UserRole, dto: QueryHistoryDto) {
     if (role === UserRole.CLIENT) {
       return this.getClientHistory(userId, dto);

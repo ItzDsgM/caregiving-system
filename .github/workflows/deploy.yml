@@ -1,0 +1,39 @@
+name: Continuous Deployment (Cloud Render)
+
+on:
+  push:
+    branches: [main, master]
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main, master]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Trigger Automated Cloud Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Deploy to Render via Webhook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Triggering Render automated deployment webhook..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+            echo "Render Deploy Hook responded with HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "Deployment trigger succeeded!"
+            else
+              echo "Deployment trigger returned non-2xx status code: $HTTP_STATUS"
+              exit 1
+            fi
+          else
+            echo "RENDER_DEPLOY_HOOK_URL secret is not configured in repository."
+            echo "To enable automated deploy on push, add RENDER_DEPLOY_HOOK_URL to GitHub Secrets."
+            echo "Manual deploy or automatic git commit trigger on Render dashboard is active."
+          fi

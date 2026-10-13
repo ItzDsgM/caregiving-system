@@ -26,6 +26,15 @@ import { User } from '../users/entities/user.entity';
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 
+  /**
+   * Updates an application status to ACCEPTED or REJECTED.
+   * If ACCEPTED, unlocks full contact details (email, phone, direct WhatsApp link).
+   *
+   * @param user - Authenticated user entity with CLIENT role (must own the job offer).
+   * @param id - UUID of the target application.
+   * @param dto - Status update payload (ACCEPTED or REJECTED).
+   * @returns Updated application and unlocked contact details if accepted.
+   */
   @Patch(':id/status')
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Update candidate application status to ACCEPTED or REJECTED' })
@@ -112,6 +121,13 @@ export class ApplicationsController {
     return this.applicationsService.updateStatus(user.id, id, dto.status);
   }
 
+  /**
+   * Retrieves the application history for the authenticated caregiver,
+   * including the status of each application and related job offer summaries.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @returns List of caregiver applications with job offer details.
+   */
   @Get('my-applications')
   @Roles(UserRole.CAREGIVER)
   @ApiOperation({ summary: 'List caregiver personal application history' })

@@ -16,6 +16,14 @@ import { QueryHistoryDto } from './dtos/query-history.dto';
 export class HistoryController {
   constructor(private readonly historyService: HistoryService) {}
 
+  /**
+   * Dynamically retrieves service history for the authenticated user according to their role.
+   * Delegates to client history or caregiver history accordingly.
+   *
+   * @param user - Authenticated user entity (CLIENT or CAREGIVER).
+   * @param dto - Filters (status, careType, date ranges, pagination).
+   * @returns Paginated history list.
+   */
   @Get('my-history')
   @ApiOperation({
     summary:
@@ -91,6 +99,14 @@ export class HistoryController {
     return this.historyService.getMyHistory(user.id, user.role, dto);
   }
 
+  /**
+   * Retrieves past and current care engagements hired by the client.
+   * Includes duration metrics and sanitized caregiver profiles (omitting direct phone/email).
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param dto - Filters (status, careType, date ranges, pagination).
+   * @returns Paginated history list.
+   */
   @Get('client')
   @Roles(UserRole.CLIENT)
   @ApiOperation({
@@ -166,6 +182,14 @@ export class HistoryController {
     return this.historyService.getClientHistory(user.id, dto);
   }
 
+  /**
+   * Retrieves past and current care engagements delivered by the caregiver.
+   * Includes duration metrics and sanitized client summaries (omitting private contact data).
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param dto - Filters (status, careType, date ranges, pagination).
+   * @returns Paginated history list.
+   */
   @Get('caregiver')
   @Roles(UserRole.CAREGIVER)
   @ApiOperation({

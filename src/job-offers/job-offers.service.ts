@@ -24,6 +24,15 @@ export class JobOffersService {
     private readonly dataSource: DataSource,
   ) {}
 
+  /**
+   * Creates a new job offer in OPEN status published by the authenticated client.
+   * Enforces budget consistency (budgetMax >= budgetMin) and date validity (startDate in future, endDate >= startDate).
+   *
+   * @param clientId - UUID of the client creating the job offer.
+   * @param dto - Job offer parameters (title, description, careType, budgets, schedule, location).
+   * @returns Newly created JobOffer entity.
+   * @throws BadRequestException If budget ranges or date constraints are violated.
+   */
   async create(clientId: string, dto: CreateJobOfferDto): Promise<JobOffer> {
     this.validateBudgets(dto.budgetMin, dto.budgetMax);
     this.validateDates(dto.startDate, dto.endDate);
@@ -37,6 +46,15 @@ export class JobOffersService {
     return this.jobOffersRepository.save(offer);
   }
 
+  /**
+   * Bulk-creates multiple job offers in an atomic database transaction.
+   * Validates budget and date logic across all items prior to persistence.
+   *
+   * @param clientId - UUID of the client creating the job offers.
+   * @param dto - DTO containing array of job offer specifications.
+   * @returns Count and array of created JobOffer entities.
+   * @throws BadRequestException If any item violates budget or date criteria.
+   */
   async bulkCreate(
     clientId: string,
     dto: BulkCreateJobOffersDto,
@@ -78,6 +96,13 @@ export class JobOffersService {
     }
   }
 
+  /**
+   * Retrieves all job offers created by the authenticated client along with
+   * an aggregated count of incoming applications for each offer.
+   *
+   * @param clientId - UUID of the authenticated client.
+   * @returns Array of JobOffer entities enriched with `applicationsCount`.
+   */
   async getMyOffers(clientId: string): Promise<Array<JobOffer & { applicationsCount: number }>> {
     const offers = await this.jobOffersRepository.find({
       where: { clientId },
@@ -96,6 +121,12 @@ export class JobOffersService {
     return result;
   }
 
+  /**
+   * Searches the public catalog of open job offers with multi-criteria filtering and pagination.
+   *
+   * @param filterDto - Filter parameters (city, careType, minBudget, maxBudget, pagination).
+   * @returns Paginated result object containing open job offers and pagination metadata.
+   */
   async findPublicOffers(filterDto: FilterJobOffersDto) {
     const page = filterDto.page ?? 1;
     const limit = filterDto.limit ?? 10;
@@ -146,6 +177,13 @@ export class JobOffersService {
     };
   }
 
+  /**
+   * Retrieves a single job offer by its unique UUID.
+   *
+   * @param id - UUID of the target job offer.
+   * @returns JobOffer entity.
+   * @throws NotFoundException If no job offer exists with the specified UUID.
+   */
   async findById(id: string): Promise<JobOffer> {
     const offer = await this.jobOffersRepository.findOne({
       where: { id },
@@ -158,6 +196,17 @@ export class JobOffersService {
     return offer;
   }
 
+  /**
+   * Updates an existing job offer owned by the client, provided it is still in OPEN status.
+   * Validates updated budgets and dates.
+   *
+   * @param clientId - UUID of the authenticated client.
+   * @param id - UUID of the job offer to update.
+   * @param dto - Updated fields.
+   * @returns Updated JobOffer entity.
+   * @throws ForbiddenException If the job offer belongs to a different client.
+   * @throws BadRequestException If the job offer is not in OPEN status, or validation fails.
+   */
   async update(
     clientId: string,
     id: string,
@@ -190,6 +239,16 @@ export class JobOffersService {
     return this.jobOffersRepository.save(offer);
   }
 
+  /**
+   * Transitions a job offer to a new lifecycle status (e.g. CLOSED or CANCELLED).
+   *
+   * @param clientId - UUID of the authenticated client.
+   * @param id - UUID of the job offer to transition (or fallback Postman variable).
+   * @param status - Target status enum value.
+   * @returns Updated JobOffer entity.
+   * @throws NotFoundException If the job offer is not found.
+   * @throws ForbiddenException If the job offer belongs to a different client.
+   */
   async updateStatus(
     clientId: string,
     id: string,
@@ -223,6 +282,13 @@ export class JobOffersService {
     return this.jobOffersRepository.save(offer);
   }
 
+  /**
+   * Validates that the maximum budget is greater than or equal to minimum budget.
+   *
+   * @param min - Minimum monetary budget amount.
+   * @param max - Maximum monetary budget amount.
+   * @throws BadRequestException If budgetMax is lower than budgetMin.
+   */
   private validateBudgets(min: number, max: number): void {
     if (max < min) {
       throw new BadRequestException(
@@ -231,6 +297,14 @@ export class JobOffersService {
     }
   }
 
+  /**
+   * Validates date consistency for job offers (future start date and endDate >= startDate).
+   *
+   * @param startDateStr - ISO string representation of the start date.
+   * @param endDateStr - ISO string representation of the end date.
+   * @param enforceFutureStart - Flag to enforce start date being in the future.
+   * @throws BadRequestException If dates are invalid or violate ordering.
+   */
   private validateDates(
     startDateStr: string,
     endDateStr: string,

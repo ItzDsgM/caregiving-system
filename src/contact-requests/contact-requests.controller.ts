@@ -28,6 +28,14 @@ import { User } from '../users/entities/user.entity';
 export class ContactRequestsController {
   constructor(private readonly contactRequestsService: ContactRequestsService) {}
 
+  /**
+   * Submits a direct contact request from the authenticated client to a caregiver.
+   * Prevents duplicate active inquiries between the same parties.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param dto - Target caregiver ID and initial message.
+   * @returns Newly created ContactRequest entity in PENDING status.
+   */
   @Post()
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Send a direct contact inquiry to a caregiver' })
@@ -102,6 +110,13 @@ export class ContactRequestsController {
     return this.contactRequestsService.create(user.id, dto);
   }
 
+  /**
+   * Retrieves all contact requests received by the authenticated caregiver.
+   * Client phone and email are masked unless status is ACCEPTED.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @returns List of incoming contact requests with masked/unlocked client data.
+   */
   @Get('received')
   @Roles(UserRole.CAREGIVER)
   @ApiOperation({ summary: 'Get direct contact inquiries received by current caregiver' })
@@ -153,6 +168,13 @@ export class ContactRequestsController {
     return this.contactRequestsService.getReceived(user.id);
   }
 
+  /**
+   * Retrieves all contact requests sent by the authenticated client.
+   * Caregiver phone and email are masked unless status is ACCEPTED.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @returns List of outgoing contact requests with masked/unlocked caregiver data.
+   */
   @Get('sent')
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Get direct contact inquiries dispatched by client' })
@@ -208,6 +230,15 @@ export class ContactRequestsController {
     return this.contactRequestsService.getSent(user.id);
   }
 
+  /**
+   * Responds to an incoming contact inquiry (ACCEPTED or REJECTED) by the recipient caregiver.
+   * If ACCEPTED, unlocks mutual contact details (email, phone, direct WhatsApp link).
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param id - UUID of the target contact request.
+   * @param dto - Response payload (ACCEPTED or REJECTED).
+   * @returns Updated request entity with unlocked contact details if accepted.
+   */
   @Patch(':id/respond')
   @Roles(UserRole.CAREGIVER)
   @ApiOperation({ summary: 'Respond to inquiry with ACCEPTED or REJECTED' })
@@ -288,6 +319,13 @@ export class ContactRequestsController {
     return this.contactRequestsService.respond(user.id, id, dto);
   }
 
+  /**
+   * Retrieves single contact inquiry details for either participating party (client or caregiver).
+   *
+   * @param user - Authenticated user entity.
+   * @param id - UUID of the target contact request.
+   * @returns Formatted contact request object with conditionally unlocked contact info.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get single contact request details (participants only)' })
   @ApiParam({

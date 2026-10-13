@@ -10,9 +10,11 @@ import { VerificationStatus } from '../common/enums/verification-status.enum';
 describe('AdminController', () => {
   let controller: AdminController;
   let service: Record<
-    'getPendingDocuments' | 'verifyDocument' | 'bulkVerifyDocuments' | 'bulkCreateUsers' | 'updateUserStatus',
+    'getPendingDocuments' | 'verifyDocument' | 'bulkVerifyDocuments' | 'bulkCreateUsers' | 'updateUserStatus' | 'updateUserRole',
     jest.Mock
   >;
+
+  let seedService: { seedDatabase: jest.Mock };
 
   beforeEach(() => {
     service = {
@@ -21,8 +23,12 @@ describe('AdminController', () => {
       bulkVerifyDocuments: jest.fn(),
       bulkCreateUsers: jest.fn(),
       updateUserStatus: jest.fn(),
+      updateUserRole: jest.fn(),
     };
-    controller = new AdminController(service as unknown as AdminService);
+    seedService = {
+      seedDatabase: jest.fn().mockResolvedValue({ message: 'seeded', counts: {} }),
+    };
+    controller = new AdminController(service as unknown as AdminService, seedService as any);
   });
 
   it('getPendingDocuments should delegate', async () => {
@@ -54,6 +60,17 @@ describe('AdminController', () => {
     const dto = { isActive: false, suspensionReason: 'abuse' };
     await controller.updateUserStatus('u-1', dto);
     expect(service.updateUserStatus).toHaveBeenCalledWith('u-1', dto);
+  });
+
+  it('updateUserRole should pass id and DTO', async () => {
+    const dto = { role: UserRole.CAREGIVER };
+    await controller.updateUserRole('u-1', dto);
+    expect(service.updateUserRole).toHaveBeenCalledWith('u-1', dto);
+  });
+
+  it('seed should delegate to seedService', async () => {
+    await expect(controller.seed()).resolves.toEqual({ message: 'seeded', counts: {} });
+    expect(seedService.seedDatabase).toHaveBeenCalled();
   });
 
   it('should be ADMIN-only at class level (RF07)', () => {

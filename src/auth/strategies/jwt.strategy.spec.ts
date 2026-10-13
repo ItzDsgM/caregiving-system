@@ -72,4 +72,34 @@ describe('JwtStrategy', () => {
       'Invalid or expired authentication token',
     );
   });
+
+  it('should reject tokens issued prior to or at lastLogoutAt with 401 Unauthorized', async () => {
+    const logoutDate = new Date('2026-10-13T12:00:00.000Z');
+    const user = { id: 'user-1', isActive: true, lastLogoutAt: logoutDate };
+    usersService.findById.mockResolvedValue(user);
+
+    // Token issued at or before logout timestamp
+    const oldPayload = {
+      ...payload,
+      iat: Math.floor(logoutDate.getTime() / 1000),
+    };
+
+    await expect(strategy.validate(oldPayload)).rejects.toThrow(
+      'Session expired or logged out. Please log in again.',
+    );
+  });
+
+  it('should accept tokens issued strictly after lastLogoutAt', async () => {
+    const logoutDate = new Date('2026-10-13T12:00:00.000Z');
+    const user = { id: 'user-1', isActive: true, lastLogoutAt: logoutDate };
+    usersService.findById.mockResolvedValue(user);
+
+    // Token issued 10 seconds after logout timestamp
+    const freshPayload = {
+      ...payload,
+      iat: Math.floor(logoutDate.getTime() / 1000) + 10,
+    };
+
+    await expect(strategy.validate(freshPayload)).resolves.toBe(user);
+  });
 });

@@ -8,6 +8,21 @@ import helmet from 'helmet';
 import { AppModule, ObserveInstrument } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
+/**
+ * Bootstraps and initializes the CareConnect NestJS application.
+ *
+ * Configures the complete application runtime pipeline:
+ * 1. **CORS:** Permits cross-origin requests with authorized methods, credentials, and headers.
+ * 2. **Security Headers (Helmet):** Enforces secure HTTP headers while allowing cross-origin resources and Swagger UI.
+ * 3. **Global Routing Prefix:** Sets `/api/v1` as the base route prefix for all REST controllers.
+ * 4. **Global Validation Pipe:** Enforces strict DTO validation with property whitelisting, rejection of unexpected fields (`forbidNonWhitelisted: true`), and implicit type conversion (`enableImplicitConversion: true`).
+ * 5. **Global Exception Filter:** Normalizes all HTTP exceptions into uniform JSON envelopes conforming to standard error response schemas.
+ * 6. **Global Serialization Interceptor:** Enforces class-transformer rules (e.g. `@Exclude()` on password hashes and internal fields).
+ * 7. **OpenAPI / Swagger:** Generates interactive API documentation at `/api/v1/docs` with Bearer JWT authorization and modular grouping.
+ * 8. **HTTP Listener:** Binds the application to the configured environment port (default `3000`) across all network interfaces (`0.0.0.0`).
+ *
+ * @returns Resolves once the server is successfully listening for incoming requests.
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     instrument: ObserveInstrument,

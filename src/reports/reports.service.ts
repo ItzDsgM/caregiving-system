@@ -80,6 +80,14 @@ export class ReportsService {
     private readonly caregiverProfileRepository: Repository<CaregiverProfile>,
   ) {}
 
+  /**
+   * Generates analytical report on client service modalities (ELDERLY_CARE, DISABILITY, CHILD_CARE).
+   * Aggregates total offers, accepted engagements, fulfillment rates, average budget intervals,
+   * market share percentages, and available caregiver candidate supply per category.
+   *
+   * @param dto - Filters (category, careType, date ranges, city).
+   * @returns Detailed modality report response.
+   */
   async getClientModalityReport(
     dto: FilterModalityReportDto,
   ): Promise<ClientModalityReportResponse> {
@@ -275,6 +283,13 @@ export class ReportsService {
     };
   }
 
+  /**
+   * Generates geographic zone report ranking zones by completed services volume and fulfillment rate.
+   * Highlights the top-served zone and computes share of total platform demand per zone.
+   *
+   * @param dto - Filters (limit, city, careType, date ranges).
+   * @returns Top zones analytical report response.
+   */
   async getTopZonesReport(dto: FilterZoneReportDto): Promise<TopZonesReportResponse> {
     const qb = this.jobOfferRepository
       .createQueryBuilder('offer')
@@ -373,6 +388,12 @@ export class ReportsService {
     };
   }
 
+  /**
+   * Generates a high-level executive dashboard combining total platform offers,
+   * hired services, predominant modality share, and the top five serviced zones.
+   *
+   * @returns Executive summary response object.
+   */
   async getExecutiveSummary(): Promise<ExecutiveSummaryResponse> {
     const modalityReport = await this.getClientModalityReport({});
     const topZonesReport = await this.getTopZonesReport({ limit: 5 });

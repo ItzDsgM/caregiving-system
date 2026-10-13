@@ -36,6 +36,21 @@ export class ReviewsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Submits a rating (1-5) and review comment for a caregiver inside an atomic database transaction.
+   * Enforces verified prior interaction (must have an ACCEPTED application or ACCEPTED contact request).
+   * Prevents self-reviews and duplicate reviews.
+   * Atomically recalculates `totalReviews` and `ratingAverage` on the CaregiverProfile.
+   *
+   * @param clientId - UUID of the client submitting the review.
+   * @param caregiverId - UUID of the caregiver being reviewed.
+   * @param dto - Rating (1-5) and optional comment text.
+   * @returns Persisted Review entity.
+   * @throws BadRequestException If client attempts to review themselves.
+   * @throws NotFoundException If the caregiver does not exist.
+   * @throws ForbiddenException If no verified prior interaction exists between the parties.
+   * @throws ConflictException If the client has already reviewed this caregiver.
+   */
   async createReview(
     clientId: string,
     caregiverId: string,
@@ -151,6 +166,15 @@ export class ReviewsService {
     }
   }
 
+  /**
+   * Retrieves a paginated list of reviews for a specified caregiver.
+   * Strips sensitive client details to protect reviewer privacy.
+   *
+   * @param caregiverId - UUID of the target caregiver user.
+   * @param paginationDto - Pagination settings (page, limit).
+   * @returns Paginated review records list with metadata.
+   * @throws NotFoundException If the caregiver is not found.
+   */
   async findByCaregiver(caregiverId: string, paginationDto: PaginationDto) {
     const caregiver = await this.userRepository.findOne({
       where: { id: caregiverId, role: UserRole.CAREGIVER },

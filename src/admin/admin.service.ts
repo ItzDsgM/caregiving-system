@@ -14,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { JobOffer } from '../job-offers/entities/job-offer.entity';
 import { VerifyDocumentDto } from './dtos/verify-document.dto';
 import { UpdateUserStatusDto } from './dtos/update-user-status.dto';
+import { UpdateUserRoleDto } from './dtos/update-user-role.dto';
 import { BulkCreateUsersDto } from './dtos/bulk-create-users.dto';
 import { BulkVerifyDocumentsDto } from './dtos/bulk-verify-documents.dto';
 import { VerificationStatus } from '../common/enums/verification-status.enum';
@@ -35,6 +36,12 @@ export class AdminService {
     private readonly dataSource: DataSource,
   ) {}
 
+  /**
+   * Retrieves all caregiver verification documents currently in PENDING review.
+   * Includes applicant caregiver personal and location summary.
+   *
+   * @returns Array of pending document objects with caregiver metadata.
+   */
   async getPendingDocuments() {
     const documents = await this.documentRepository.find({
       where: { verificationStatus: VerificationStatus.PENDING },
@@ -64,6 +71,18 @@ export class AdminService {
     }));
   }
 
+  /**
+   * Audits and updates the verification status of a caregiver document (APPROVED or REJECTED).
+   * Mandates adminNotes when rejecting.
+   * Automatically grants the verified trust badge (`isDocumentVerified: true`) to the caregiver profile
+   * once both an ID_CARD and a CRIMINAL_RECORD document have been approved.
+   *
+   * @param documentId - UUID of the target CaregiverDocument (or fallback Postman variable).
+   * @param dto - Status decision and mandatory reviewer notes on rejection.
+   * @returns Updated CaregiverDocument entity.
+   * @throws NotFoundException If the document does not exist.
+   * @throws BadRequestException If rejection is requested without adminNotes.
+   */
   async verifyDocument(documentId: string, dto: VerifyDocumentDto) {
     let document: CaregiverDocument | null = null;
 
@@ -132,6 +151,22 @@ export class AdminService {
     return savedDoc;
   }
 
+  /**
+   * Updates user account status (active/suspended).
+   * Rejects attempts to suspend ADMIN accounts.
+   * Mandates suspensionReason when deactivating.
+   * Triggers cascade ripple effects:
+   * - CAREGIVER: sets profile `isPublic: false` to immediately remove from search results.
+   * - CLIENT: automatically transitions all OPEN job offers to CANCELLED.
+   * Restores caregiver visibility when reactivated.
+   *
+   * @param userId - UUID of the target user.
+   * @param dto - Desired activation status and mandatory suspension reason.
+   * @returns Updated User entity.
+   * @throws NotFoundException If the user does not exist.
+   * @throws ForbiddenException If attempting to suspend an administrator.
+   * @throws BadRequestException If deactivating without a suspension reason.
+   */
   async updateUserStatus(userId: string, dto: UpdateUserStatusDto) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -186,6 +221,75 @@ export class AdminService {
     return this.userRepository.save(user);
   }
 
+  /**
+   * Assigns or updates a user's system role (administrative RBAC control).
+   * Safeguards against demoting the last remaining active administrator.
+   * If promoting to CAREGIVER, ensures an associated CaregiverProfile exists.
+   *
+   * @param userId - UUID of the target user.
+   * @param dto - Target role to assign.
+   * @returns Updated sanitized user entity.
+   * @throws NotFoundException If the user does not exist.
+   * @throws BadRequestException If attempting to demote the sole remaining active administrator.
+   */
+  async updateUserRole(
+    userId: string,
+    dto: UpdateUserRoleDto,
+  ): Promise<Omit<User, 'password'>> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" was not found`);
+    }
+
+    if (user.role === UserRole.ADMIN && dto.role !== UserRole.ADMIN) {
+      const activeAdminCount = await this.userRepository.count({
+        where: { role: UserRole.ADMIN, isActive: true },
+      });
+      if (activeAdminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot demote the last remaining active administrator',
+        );
+      }
+    }
+
+    if (dto.role === UserRole.CAREGIVER) {
+      const existingProfile = await this.profileRepository.findOne({
+        where: { userId: user.id },
+      });
+      if (!existingProfile) {
+        const newProfile = this.profileRepository.create({
+          userId: user.id,
+        });
+        await this.profileRepository.save(newProfile);
+      }
+    }
+
+    user.role = dto.role;
+    const savedUser = await this.userRepository.save(user);
+
+    const {
+      password: _password,
+      resetPasswordToken: _resetPasswordToken,
+      resetPasswordExpires: _resetPasswordExpires,
+      ...sanitized
+    } = savedUser;
+
+    return sanitized as Omit<User, 'password'>;
+  }
+
+  /**
+   * Creates multiple user accounts with any role in an administrative batch.
+   * Runs within an atomic database transaction.
+   * Automatically initializes associated CaregiverProfile records for CAREGIVER users.
+   *
+   * @param bulkDto - Batch payload containing array of user creations.
+   * @returns Total count and list of sanitized user entities.
+   * @throws BadRequestException If duplicate emails exist within the batch payload.
+   * @throws ConflictException If any email is already registered in the system.
+   */
   async bulkCreateUsers(
     bulkDto: BulkCreateUsersDto,
   ): Promise<{ count: number; users: Omit<User, 'password'>[] }> {
@@ -252,6 +356,14 @@ export class AdminService {
     }
   }
 
+  /**
+   * Audits and verifies multiple caregiver documents in a single administrative request.
+   * Validates mandatory adminNotes for any rejected documents prior to execution.
+   *
+   * @param bulkDto - Batch payload with document IDs and verification decisions.
+   * @returns Count and array of verified CaregiverDocument entities.
+   * @throws BadRequestException If any rejected item is missing adminNotes.
+   */
   async bulkVerifyDocuments(bulkDto: BulkVerifyDocumentsDto) {
     for (const item of bulkDto.items) {
       if (

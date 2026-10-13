@@ -25,6 +25,16 @@ export class ContactRequestsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Creates a direct contact inquiry sent by a client to a caregiver.
+   * Checks for duplicate active/accepted inquiries and emits `contact_request.created` event.
+   *
+   * @param clientId - UUID of the client initiating contact.
+   * @param dto - Target caregiver ID and introductory message.
+   * @returns Newly created ContactRequest entity in PENDING status.
+   * @throws NotFoundException If the target caregiver does not exist.
+   * @throws ConflictException If an active or accepted inquiry already exists between the parties.
+   */
   async create(clientId: string, dto: CreateContactRequestDto): Promise<ContactRequest> {
     const caregiver = await this.userRepository.findOne({
       where: { id: dto.caregiverId, role: UserRole.CAREGIVER },
@@ -69,6 +79,13 @@ export class ContactRequestsService {
     return savedRequest;
   }
 
+  /**
+   * Retrieves all contact inquiries received by the authenticated caregiver.
+   * Contact details of client remain masked unless status is ACCEPTED.
+   *
+   * @param caregiverId - UUID of the authenticated caregiver.
+   * @returns Formatted list of incoming inquiries with masked/unlocked client data.
+   */
   async getReceived(caregiverId: string) {
     const requests = await this.contactRequestRepository.find({
       where: { caregiverId },
@@ -79,6 +96,13 @@ export class ContactRequestsService {
     return requests.map((req) => this.formatRequest(req, 'caregiver'));
   }
 
+  /**
+   * Retrieves all contact inquiries sent by the authenticated client.
+   * Contact details of caregiver remain masked unless status is ACCEPTED.
+   *
+   * @param clientId - UUID of the authenticated client.
+   * @returns Formatted list of outgoing inquiries with masked/unlocked caregiver data.
+   */
   async getSent(clientId: string) {
     const requests = await this.contactRequestRepository.find({
       where: { clientId },
@@ -89,6 +113,18 @@ export class ContactRequestsService {
     return requests.map((req) => this.formatRequest(req, 'client'));
   }
 
+  /**
+   * Responds to a pending contact request (ACCEPTED or REJECTED) on behalf of the caregiver.
+   * If ACCEPTED, unlocks mutual contact details (email, phone, direct WhatsApp link) and emits event.
+   *
+   * @param caregiverId - UUID of the authenticated caregiver recipient.
+   * @param requestId - UUID of the contact request.
+   * @param dto - Response status payload (ACCEPTED or REJECTED).
+   * @returns Updated request entity and unlocked contact details if accepted.
+   * @throws NotFoundException If the contact request does not exist.
+   * @throws ForbiddenException If the caregiver is not the recipient.
+   * @throws BadRequestException If the request is not in PENDING status.
+   */
   async respond(
     caregiverId: string,
     requestId: string,
@@ -169,6 +205,15 @@ export class ContactRequestsService {
     return { contactRequest: updated };
   }
 
+  /**
+   * Retrieves a single contact inquiry by ID, validating that the requesting user is either client or caregiver.
+   *
+   * @param userId - UUID of the requesting authenticated user.
+   * @param requestId - UUID of the contact request.
+   * @returns Formatted inquiry object with conditionally unlocked contact info.
+   * @throws NotFoundException If the request does not exist.
+   * @throws ForbiddenException If the requesting user is not a participant.
+   */
   async findById(userId: string, requestId: string) {
     const request = await this.contactRequestRepository.findOne({
       where: { id: requestId },
@@ -189,6 +234,13 @@ export class ContactRequestsService {
     return this.formatRequest(request, rolePerspective);
   }
 
+  /**
+   * Formats a contact request entity for output, conditionally masking phone/email unless ACCEPTED.
+   *
+   * @param request - ContactRequest entity with client and caregiver relations.
+   * @param perspective - Viewing role perspective ('client' or 'caregiver').
+   * @returns Formatted response object with participant summary.
+   */
   private formatRequest(request: ContactRequest, perspective: 'client' | 'caregiver') {
     const isAccepted = request.status === ContactRequestStatus.ACCEPTED;
 

@@ -51,6 +51,16 @@ export class User {
   @Column({ type: 'timestamp with time zone', nullable: true, select: false })
   resetPasswordExpires: Date | null;
 
+  @Column({ default: false })
+  isTwoFactorEnabled: boolean;
+
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, select: false })
+  twoFactorSecret: string | null;
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  lastLogoutAt: Date | null;
+
   @OneToOne('CaregiverProfile', (profile: any) => profile.user, {
     nullable: true,
   })

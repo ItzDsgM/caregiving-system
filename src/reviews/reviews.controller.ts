@@ -26,6 +26,16 @@ import { User } from '../users/entities/user.entity';
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
+  /**
+   * Submits a verified rating and review for a caregiver.
+   * Requires authenticated CLIENT role and verified completed prior engagement.
+   * Atomically recalculates the caregiver's average rating and total review count.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param caregiverId - UUID of the caregiver being reviewed.
+   * @param dto - Rating (1-5) and comment text.
+   * @returns Newly created Review entity.
+   */
   @Post()
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -120,6 +130,13 @@ export class ReviewsController {
     return this.reviewsService.createReview(user.id, caregiverId, dto);
   }
 
+  /**
+   * Retrieves a paginated list of public reviews for a specified caregiver.
+   *
+   * @param caregiverId - UUID of the caregiver.
+   * @param paginationDto - Query parameters for pagination (page, limit).
+   * @returns Paginated list of reviews with reviewer summaries.
+   */
   @Get()
   @ApiOperation({ summary: 'List public reviews for a caregiver with pagination' })
   @ApiParam({

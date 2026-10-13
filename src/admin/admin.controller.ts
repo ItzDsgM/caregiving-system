@@ -11,8 +11,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { AdminSeedService } from './admin-seed.service';
 import { VerifyDocumentDto } from './dtos/verify-document.dto';
 import { UpdateUserStatusDto } from './dtos/update-user-status.dto';
+import { UpdateUserRoleDto } from './dtos/update-user-role.dto';
 import { BulkCreateUsersDto } from './dtos/bulk-create-users.dto';
 import { BulkVerifyDocumentsDto } from './dtos/bulk-verify-documents.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -27,8 +29,17 @@ import { UserRole } from '../common/enums/user-role.enum';
 @Roles(UserRole.ADMIN)
 @UseInterceptors(ClassSerializerInterceptor)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminSeedService: AdminSeedService,
+  ) {}
 
+  /**
+   * Lists all caregiver documents awaiting administrative verification.
+   * Restricted strictly to users with the ADMIN role.
+   *
+   * @returns Array of pending documents with applicant caregiver information.
+   */
   @Get('documents/pending')
   @ApiOperation({ summary: 'List all caregiver verification documents with PENDING status' })
   @ApiResponse({
@@ -83,6 +94,15 @@ export class AdminController {
     return this.adminService.getPendingDocuments();
   }
 
+  /**
+   * Audits a caregiver document and sets its status to APPROVED or REJECTED.
+   * If rejected, requires administrative notes.
+   * Awards the verified trust badge if both ID card and criminal record are approved.
+   *
+   * @param id - UUID of the target CaregiverDocument.
+   * @param dto - Verification status and audit notes.
+   * @returns Updated CaregiverDocument entity.
+   */
   @Patch('documents/:id/verify')
   @ApiOperation({ summary: 'Resolve verification status (APPROVED or REJECTED) for a document' })
   @ApiParam({
@@ -157,6 +177,12 @@ export class AdminController {
     return this.adminService.verifyDocument(id, dto);
   }
 
+  /**
+   * Verifies multiple caregiver documents in a single batch operation.
+   *
+   * @param dto - Batch payload containing document verification items.
+   * @returns Total count and array of verified documents.
+   */
   @Patch('documents/bulk-verify')
   @ApiOperation({ summary: 'Verify multiple documents in a single batch (Admin only)' })
   @ApiResponse({
@@ -227,6 +253,13 @@ export class AdminController {
     return this.adminService.bulkVerifyDocuments(dto);
   }
 
+  /**
+   * Provisions multiple users in an administrative batch.
+   * Allows creation of CAREGIVER, CLIENT, or ADMIN accounts.
+   *
+   * @param dto - Batch payload containing an array of user objects.
+   * @returns Count and array of sanitized user entities.
+   */
   @Post('users/bulk')
   @ApiOperation({ summary: 'Provision multiple users in bulk (Admin only)' })
   @ApiResponse({
@@ -301,6 +334,14 @@ export class AdminController {
     return this.adminService.bulkCreateUsers(dto);
   }
 
+  /**
+   * Modifies account activation status (active or suspended) and triggers cascade ripple effects.
+   * Prohibits suspension of administrators.
+   *
+   * @param id - UUID of the target user.
+   * @param dto - Status payload with activation flag and mandatory suspension reason.
+   * @returns Updated User entity.
+   */
   @Patch('users/:id/status')
   @ApiOperation({ summary: 'Update user active status with cascading suspension effects' })
   @ApiParam({
@@ -375,5 +416,65 @@ export class AdminController {
     @Body() dto: UpdateUserStatusDto,
   ) {
     return this.adminService.updateUserStatus(id, dto);
+  }
+
+  /**
+   * Assigns or updates a user's system role (administrative authorization mechanism).
+   * Restricted strictly to administrators.
+   *
+   * @param id - UUID string of the target user.
+   * @param dto - Desired role to assign.
+   * @returns Updated user entity.
+   */
+  @Patch('users/:id/role')
+  @ApiOperation({ summary: 'Assign or update a user role (administrative authorization mechanism)' })
+  @ApiParam({ name: 'id', description: 'User UUID identifier' })
+  @ApiResponse({
+    status: 200,
+    description: 'User role updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot demote the last remaining administrator',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+  ) {
+    return this.adminService.updateUserRole(id, dto);
+  }
+
+  /**
+   * Seeds the database with a complete set of initial test records.
+   * Creates Administrator, Caregivers, Clients, Job Offers, Applications, Contact Requests, and Reviews.
+   *
+   * @returns Detailed summary of seeded entities and counts.
+   */
+  @Post('seed')
+  @ApiOperation({ summary: 'Populate database with complete initial test records (Admin, Caregivers, Clients, Offers, Applications, Reviews)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Initial dataset seeded successfully',
+    schema: {
+      example: {
+        message: 'Initial dataset seeded successfully',
+        counts: {
+          users: 5,
+          caregivers: 2,
+          clients: 2,
+          jobOffers: 2,
+          applications: 2,
+          contactRequests: 2,
+          reviews: 1,
+        },
+      },
+    },
+  })
+  async seed() {
+    return this.adminSeedService.seedDatabase();
   }
 }

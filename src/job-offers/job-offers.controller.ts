@@ -36,6 +36,13 @@ export class JobOffersController {
     private readonly applicationsService: ApplicationsService,
   ) {}
 
+  /**
+   * Publishes a new job offer in OPEN status created by the authenticated client.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param createDto - Job offer specifications (title, careType, budgets, schedule, location).
+   * @returns Newly created JobOffer entity.
+   */
   @Post()
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -113,6 +120,13 @@ export class JobOffersController {
     return this.jobOffersService.create(user.id, createDto);
   }
 
+  /**
+   * Creates multiple job offers in bulk within an atomic database transaction.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param bulkDto - Batch payload containing array of job offers.
+   * @returns Total count and array of created JobOffer entities.
+   */
   @Post('bulk')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -190,6 +204,13 @@ export class JobOffersController {
     return this.jobOffersService.bulkCreate(user.id, bulkDto);
   }
 
+  /**
+   * Retrieves all job offers published by the authenticated client,
+   * including the total count of applications received for each offer.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @returns List of job offers enriched with application counts.
+   */
   @Get('my-offers')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -239,6 +260,13 @@ export class JobOffersController {
     return this.jobOffersService.getMyOffers(user.id);
   }
 
+  /**
+   * Retrieves a paginated catalog of open job offers matching optional filters (city, careType, budget).
+   * Accessible publicly by all authenticated or unauthenticated users.
+   *
+   * @param filterDto - Query parameters for filtering and pagination.
+   * @returns Paginated job offers list with metadata.
+   */
   @Get()
   @ApiOperation({ summary: 'List public open job offers with filtering and pagination' })
   @ApiResponse({
@@ -286,6 +314,15 @@ export class JobOffersController {
     return this.jobOffersService.findPublicOffers(filterDto);
   }
 
+  /**
+   * Submits an application from the authenticated caregiver to an open job offer.
+   * Prevents duplicate applications from the same caregiver.
+   *
+   * @param user - Authenticated user entity with CAREGIVER role.
+   * @param id - UUID of the target job offer.
+   * @param applyDto - Application proposal containing cover letter and proposed rate.
+   * @returns Newly created Application entity in PENDING status.
+   */
   @Post(':id/apply')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -380,6 +417,14 @@ export class JobOffersController {
     return this.applicationsService.apply(user.id, id, applyDto);
   }
 
+  /**
+   * Retrieves all candidate applications submitted for a specific job offer.
+   * Access is strictly restricted to the client who published the offer.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param id - UUID of the target job offer.
+   * @returns List of Application entities with applicant caregiver summaries.
+   */
   @Get(':id/applications')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -458,6 +503,12 @@ export class JobOffersController {
     return this.applicationsService.findByJobOffer(user.id, id);
   }
 
+  /**
+   * Retrieves detailed specifications and requirements for a single job offer by ID.
+   *
+   * @param id - UUID of the target job offer.
+   * @returns JobOffer entity details.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get job offer details by ID' })
   @ApiParam({
@@ -507,6 +558,15 @@ export class JobOffersController {
     return this.jobOffersService.findById(id);
   }
 
+  /**
+   * Updates an open job offer owned by the client (schedules, careType, budgets).
+   * Rejects modifications if offer is already CLOSED or CANCELLED.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param id - UUID of the target job offer.
+   * @param updateDto - Partial updates to apply.
+   * @returns Updated JobOffer entity.
+   */
   @Patch(':id')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -594,6 +654,15 @@ export class JobOffersController {
     return this.jobOffersService.update(user.id, id, updateDto);
   }
 
+  /**
+   * Transitions a job offer status to CLOSED or CANCELLED.
+   * Only the owning client has permission to change the status.
+   *
+   * @param user - Authenticated user entity with CLIENT role.
+   * @param id - UUID of the target job offer.
+   * @param statusDto - DTO specifying the target status (CLOSED or CANCELLED).
+   * @returns Updated JobOffer entity.
+   */
   @Patch(':id/status')
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)

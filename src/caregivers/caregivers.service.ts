@@ -29,6 +29,14 @@ export class CaregiversService {
     private readonly documentRepository: Repository<CaregiverDocument>,
   ) {}
 
+  /**
+   * Retrieves the caregiver profile owned by the authenticated caregiver user,
+   * including all associated uploaded documents regardless of verification status.
+   *
+   * @param userId - Unique UUID of the authenticated caregiver user.
+   * @returns Complete CaregiverProfile entity with documents array.
+   * @throws NotFoundException If no profile exists for the given user UUID.
+   */
   async getMyProfile(userId: string): Promise<CaregiverProfile> {
     const profile = await this.profileRepository.findOne({
       where: { userId },
@@ -42,6 +50,14 @@ export class CaregiversService {
     return profile;
   }
 
+  /**
+   * Updates professional details, rates, geographic zones, and availability for the authenticated caregiver.
+   *
+   * @param userId - Unique UUID of the authenticated caregiver user.
+   * @param updateDto - DTO containing fields to update (bio, rates, availability slots, etc.).
+   * @returns Updated and persisted CaregiverProfile entity.
+   * @throws NotFoundException If the profile does not exist.
+   */
   async updateMyProfile(
     userId: string,
     updateDto: UpdateCaregiverProfileDto,
@@ -53,6 +69,17 @@ export class CaregiversService {
     return this.profileRepository.save(profile);
   }
 
+  /**
+   * Uploads and associates a compliance or identity verification document with the caregiver profile.
+   * Initializes the document status as PENDING verification.
+   *
+   * @param userId - Unique UUID of the authenticated caregiver user.
+   * @param file - Multer uploaded file metadata (PDF, JPEG, or PNG up to 5MB).
+   * @param uploadDto - DTO indicating document category (ID_CARD, CRIMINAL_RECORD, etc.).
+   * @returns Newly created CaregiverDocument entity.
+   * @throws BadRequestException If neither a file nor a file reference is provided.
+   * @throws NotFoundException If the caregiver profile does not exist.
+   */
   async uploadDocument(
     userId: string,
     file: Express.Multer.File | undefined,
@@ -84,6 +111,17 @@ export class CaregiversService {
     return this.documentRepository.save(document);
   }
 
+  /**
+   * Deletes a caregiver document from the database and local disk if it is in PENDING or REJECTED status.
+   * Strictly prevents deletion of APPROVED documents.
+   *
+   * @param userId - Unique UUID of the authenticated caregiver user.
+   * @param documentId - UUID of the target document to delete (or fallback Postman variable).
+   * @returns Confirmation message on successful removal.
+   * @throws NotFoundException If the document does not exist.
+   * @throws ForbiddenException If the document belongs to a different caregiver.
+   * @throws BadRequestException If the document has already been APPROVED by an admin.
+   */
   async deleteDocument(
     userId: string,
     documentId: string,
@@ -148,6 +186,14 @@ export class CaregiversService {
     return { message: 'Document removed successfully' };
   }
 
+  /**
+   * Searches the public catalog of caregivers using multi-criteria filtering and pagination.
+   * Filters by city (case-insensitive ILIKE), specialty, hourly rate range, minimum rating,
+   * and admin-verified status. Strictly omits private phone and email data.
+   *
+   * @param dto - Search and filtering criteria (city, specialty, price range, minRating, pagination).
+   * @returns Paginated results object containing sanitized caregiver records and metadata.
+   */
   async search(dto: SearchCaregiversDto) {
     const page = dto.page ?? 1;
     const limit = dto.limit ?? 10;
@@ -249,6 +295,14 @@ export class CaregiversService {
     };
   }
 
+  /**
+   * Retrieves the public profile of a caregiver by either caregiver profile UUID or user UUID.
+   * Restricts document exposure strictly to APPROVED documents and strips private telephone/email.
+   *
+   * @param id - UUID of either the CaregiverProfile or the User entity.
+   * @returns Public caregiver profile with sanitized fields and approved documents.
+   * @throws NotFoundException If the profile does not exist, is marked private, or user is inactive.
+   */
   async getPublicProfile(id: string) {
     const profile = await this.profileRepository.findOne({
       where: [{ id }, { userId: id }],

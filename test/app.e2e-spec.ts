@@ -8,6 +8,7 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { UserRole } from '../src/common/enums/user-role.enum';
 import { CareSpecialty } from '../src/common/enums/care-specialty.enum';
 import { User } from '../src/users/entities/user.entity';
+import { generateTotp } from '../src/auth/utils/totp.util';
 
 describe('CareConnect API (e2e Complete Lifecycle)', () => {
   let app: INestApplication;
@@ -738,6 +739,184 @@ describe('CareConnect API (e2e Complete Lifecycle)', () => {
         .get('/api/v1/history/my-history')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(403);
+    });
+  });
+
+  describe('13. Workshop Compliance (2FA, Logout Invalidation, Admin Role Management & DB Seed)', () => {
+    let workshopUserToken = '';
+    let workshopUserId = '';
+    let twoFactorSecret = '';
+
+    const workshopUserData = {
+      email: 'workshop-user@example.com',
+      password: 'Password123!',
+      firstName: 'Workshop',
+      lastName: 'Tester',
+      phone: '+573209998877',
+      role: UserRole.CLIENT,
+    };
+
+    it('POST /api/v1/auth/register - should register a client for workshop testing', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send(workshopUserData)
+        .expect(201);
+
+      expect(res.body).toHaveProperty('id');
+      workshopUserId = res.body.id;
+    });
+
+    it('POST /api/v1/auth/login - should log in workshop test user', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: workshopUserData.email,
+          password: workshopUserData.password,
+        })
+        .expect(200);
+
+      expect(res.body).toHaveProperty('access_token');
+      workshopUserToken = res.body.access_token;
+    });
+
+    it('POST /api/v1/auth/2fa/generate - should generate 2FA secret and otpauthUrl', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/2fa/generate')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('secret');
+      expect(res.body).toHaveProperty('otpauthUrl');
+      expect(res.body.otpauthUrl).toContain('otpauth://totp/');
+      twoFactorSecret = res.body.secret;
+    });
+
+    it('POST /api/v1/auth/2fa/enable - should reject invalid 2FA code with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/2fa/enable')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .send({ code: '000000' })
+        .expect(400);
+    });
+
+    it('POST /api/v1/auth/2fa/enable - should enable 2FA with valid TOTP code', async () => {
+      const validCode = generateTotp(twoFactorSecret);
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/2fa/enable')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .send({ code: validCode })
+        .expect(200);
+
+      expect(res.body.isTwoFactorEnabled).toBe(true);
+    });
+
+    it('POST /api/v1/auth/login - should require 2FA challenge when 2FA is enabled', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: workshopUserData.email,
+          password: workshopUserData.password,
+        })
+        .expect(200);
+
+      expect(res.body.isTwoFactorRequired).toBe(true);
+      expect(res.body.email).toBe(workshopUserData.email);
+      expect(res.body).not.toHaveProperty('access_token');
+    });
+
+    it('POST /api/v1/auth/2fa/authenticate - should exchange valid 2FA code for JWT access token', async () => {
+      const validCode = generateTotp(twoFactorSecret);
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/2fa/authenticate')
+        .send({
+          email: workshopUserData.email,
+          code: validCode,
+        })
+        .expect(200);
+
+      expect(res.body).toHaveProperty('access_token');
+      expect(res.body.user.email).toBe(workshopUserData.email);
+      workshopUserToken = res.body.access_token;
+    });
+
+    it('POST /api/v1/auth/2fa/disable - should disable 2FA with valid code', async () => {
+      const validCode = generateTotp(twoFactorSecret);
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/2fa/disable')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .send({ code: validCode })
+        .expect(200);
+
+      expect(res.body.isTwoFactorEnabled).toBe(false);
+    });
+
+    it('POST /api/v1/auth/logout - should log out and invalidate existing session token', async () => {
+      // 1. Verify token works before logout
+      await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .expect(200);
+
+      // 2. Perform logout
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .expect(200);
+
+      expect(res.body.message).toBe('Successfully logged out');
+
+      // 3. Verify same token is now rejected with 401 Unauthorized
+      await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${workshopUserToken}`)
+        .expect(401);
+    });
+
+    it('PATCH /api/v1/admin/users/:id/role - ADMIN updates user role to CAREGIVER and seeds profile', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/admin/users/${workshopUserId}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: UserRole.CAREGIVER })
+        .expect(200);
+
+      expect(res.body.id).toBe(workshopUserId);
+      expect(res.body.role).toBe(UserRole.CAREGIVER);
+    });
+
+    it('PATCH /api/v1/admin/users/:id/role - should reject demoting the last admin with 400', async () => {
+      const adminProfile = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/admin/users/${adminProfile.body.id}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: UserRole.CLIENT })
+        .expect(400);
+    });
+
+    it('POST /api/v1/admin/seed - non-admin should be rejected with 403 Forbidden', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/admin/seed')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(403);
+    });
+
+    it('POST /api/v1/admin/seed - ADMIN seeds database with full records', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/admin/seed')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(201);
+
+      expect(res.body).toHaveProperty('message');
+      expect(res.body).toHaveProperty('counts');
+      expect(res.body.counts.caregivers).toBe(2);
+      expect(res.body.counts.clients).toBe(2);
+      expect(res.body.counts.jobOffers).toBeGreaterThanOrEqual(2);
+      expect(res.body.counts.applications).toBeGreaterThanOrEqual(2);
+      expect(res.body.counts.contactRequests).toBeGreaterThanOrEqual(2);
+      expect(res.body.counts.reviews).toBeGreaterThanOrEqual(1);
     });
   });
 });

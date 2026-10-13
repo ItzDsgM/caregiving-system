@@ -22,6 +22,13 @@ import { User } from './entities/user.entity';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /**
+   * Retrieves the full profile of the currently authenticated user,
+   * including any associated CaregiverProfile.
+   *
+   * @param currentUser - Injected user entity resolved by JwtAuthGuard from the Bearer token.
+   * @returns Current user entity with related profile details.
+   */
   @Get('me')
   @ApiOperation({ summary: 'Retrieve currently authenticated user profile' })
   @ApiResponse({
@@ -74,6 +81,13 @@ export class UsersController {
     return this.usersService.findById(currentUser.id);
   }
 
+  /**
+   * Updates personal profile attributes (e.g. firstName, lastName, phone) for the authenticated user.
+   *
+   * @param currentUser - Injected user entity resolved from Bearer token.
+   * @param updateUserDto - DTO with fields to update.
+   * @returns Updated User entity.
+   */
   @Patch('me')
   @ApiOperation({ summary: 'Update authenticated user personal profile information' })
   @ApiResponse({

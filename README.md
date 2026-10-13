@@ -13,13 +13,16 @@ CareConnect is a robust, enterprise-grade RESTful backend application built with
 
 ## Architecture & System Highlights
 
-- **Role-Based Access Control (RBAC):** Distinct permissions for `CAREGIVER`, `CLIENT`, and `ADMIN` enforced via `@Roles()` decorators and `RolesGuard`.
-- **Privacy Unlocking Model:** Caregiver contact details (phone, email) remain masked from public listings until a formal contact request or job application is accepted.
-- **Document Audit Engine:** Secure uploads for identity documents, background checks, and certifications, verified by administrators to grant trust badges.
-- **Atomic Reputation & Ratings:** 1–5 star client reviews calculate weighted average ratings atomically to prevent race conditions.
-- **Analytics & History:** Geographic zone demand metrics, care modality reports, and bidirectional engagement history with duration tracking.
-- **Standardized Error Handling:** Global `HttpExceptionFilter` ensuring RFC-compliant `{ statusCode, message, timestamp, path }` error envelopes.
-- **Interactive OpenAPI/Swagger:** Fully annotated interactive documentation available at `/api/v1/docs` with input schemas, return payloads, and error examples.
+- **Role-Based Access Control (RBAC):** Distinct permissions for `CAREGIVER`, `CLIENT`, and `ADMIN` enforced via `@Roles()` decorators and `RolesGuard`, with dynamic admin role assignment (`PATCH /admin/users/:id/role`).
+- **Two-Factor Authentication (2FA / TOTP):** RFC 6238 time-based one-time password system (`/auth/2fa/*`) compatible with Google Authenticator and Authy.
+- **Active Session Logout:** JWT token invalidation via `POST /auth/logout` and timestamp checks in `JwtStrategy`.
+- **Database Seeding Engine:** CLI script (`bun run seed`) and admin endpoint (`POST /admin/seed`) feeding realistic caregivers, clients, offers, applications, and reviews.
+- **Privacy Unlocking Model:** Caregiver contact details (phone, email, WhatsApp) remain masked until mutual acceptance.
+- **Document Audit Engine:** Secure uploads for identity documents and background checks, verified by administrators to grant trust badges.
+- **Atomic Reputation & Ratings:** 1–5 star client reviews calculate weighted average ratings atomically via TypeORM `QueryRunner` transactions.
+- **Analytics & History:** Geographic zone demand metrics, care modality reports, and bidirectional engagement history.
+- **Continuous Integration & Deployment:** GitHub Actions CI/CD workflows (`ci.yml`, `deploy.yml`) and multi-stage Docker containerization.
+- **Interactive OpenAPI/Swagger:** Fully annotated documentation at `/api/v1/docs`.
 
 ---
 
@@ -27,15 +30,15 @@ CareConnect is a robust, enterprise-grade RESTful backend application built with
 
 | Module | Route Prefix | Key Functionalities |
 | :--- | :--- | :--- |
-| **Auth** | `/api/v1/auth` | User registration, bulk registration, JWT login, and secure password recovery. |
-| **Users** | `/api/v1/users` | Current user profile retrieval and account details updates. |
-| **Caregivers** | `/api/v1/caregivers` | Profile setup (rates, experience, bio, schedule), document upload, and public search engine. |
+| **Auth** | `/api/v1/auth` | Registration, bulk register, JWT login, 2FA (generate/enable/disable/authenticate), session logout, and password recovery. |
+| **Users** | `/api/v1/users` | Current user profile retrieval (`/users/me`) and account details updates. |
+| **Caregivers** | `/api/v1/caregivers` | Profile setup (rates, experience, bio, schedule), document upload, and public search engine with filters. |
 | **Job Offers** | `/api/v1/job-offers` | Job postings, search by city/modality/budget, bulk creation, and applicant retrieval. |
-| **Applications** | `/api/v1/applications` | Job applications with cover letters and rate proposals; accept/reject transitions. |
-| **Contact Requests**| `/api/v1/contact-requests` | Direct client-caregiver messaging with contact info unlocking upon acceptance. |
+| **Applications** | `/api/v1/applications` | Job applications with rate proposals; accept/reject transitions with privacy disclosure. |
+| **Contact Requests**| `/api/v1/contact-requests` | Direct client-caregiver messaging with WhatsApp contact unlocking upon acceptance. |
 | **Reviews** | `/api/v1/reviews` | Verified ratings (1–5) and client feedback with auto-updated caregiver rating averages. |
-| **Admin** | `/api/v1/admin` | Document verification queue, document approval/rejection, user account suspension. |
-| **Reports** | `/api/v1/reports` | Care modality breakdown, top requested geographic zones, and verification metrics. |
+| **Admin** | `/api/v1/admin` | Document verification queue, approval/rejection, user account suspension, role assignment, and database seeding. |
+| **Reports** | `/api/v1/reports` | Care modality breakdown, top requested geographic zones, and executive summary metrics. |
 | **History** | `/api/v1/history` | Bidirectional client-caregiver hiring history with sanitized data and duration calculation. |
 
 ---
@@ -48,7 +51,7 @@ CareConnect is a robust, enterprise-grade RESTful backend application built with
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone <repository-url>
+git clone https://github.com/ItzDsgM/caregiving-system.git
 cd caregiving-system
 bun install
 ```
@@ -64,16 +67,38 @@ cp .env.example .env
 docker compose up -d postgres
 ```
 
-### 4. Run the Development Server
+### 4. Feed Initial Database Records (Seed)
+```bash
+bun run seed
+```
+This seeds the initial Super Admin (`admin@careconnect.com` / `AdminSecret123!`), sample caregivers, clients, job offers, applications, and reviews.
+
+### 5. Run the Development Server
 ```bash
 bun run start:dev
 ```
 The application will start at `http://localhost:3000`.  
 Explore the interactive Swagger documentation at **`http://localhost:3000/api/v1/docs`**.
 
-### 5. Running Tests
+### 6. Running Tests & Quality Gates
 ```bash
-bun run test        # Run Jest unit and service test suites (32 suites, 322 tests)
-bun run test:e2e    # Run end-to-end integration tests
-bun run build       # Verify TypeScript compilation
+bun run test        # Run Jest unit test suites (33 suites, 338 tests, 100% pass)
+bun run test:cov    # Check code coverage (>98% coverage across statements and lines)
+bun run test:e2e    # Run end-to-end integration tests (Supertest)
+bun run test:postman # Run automated Newman API collection tests
+bun run build       # Verify TypeScript compilation (Zero errors)
 ```
+
+### 7. Production Docker Build
+```bash
+docker build -t caregiving-system:latest .
+docker run -p 3000:3000 --env-file .env caregiving-system:latest
+```
+
+---
+
+## Cloud Deployment & Links
+
+* **Live Production API:** [https://caregiving-system.onrender.com/api/v1](https://caregiving-system.onrender.com/api/v1)
+* **Production Swagger UI:** [https://caregiving-system.onrender.com/api/v1/docs](https://caregiving-system.onrender.com/api/v1/docs)
+* **Technical Workshop Report:** Consult [`INFORME.md`](./INFORME.md) for full endpoint schemas, request/response examples, and architecture documentation.

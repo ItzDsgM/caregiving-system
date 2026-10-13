@@ -89,11 +89,14 @@ describe('AdminService', () => {
 
     profileRepo = {
       findOne: jest.fn(),
+      create: jest.fn().mockImplementation((dto) => dto as CaregiverProfile),
+      save: jest.fn().mockImplementation(async (p) => p as CaregiverProfile),
       update: jest.fn().mockResolvedValue({ affected: 1 } as any),
     };
 
     userRepo = {
       findOne: jest.fn(),
+      count: jest.fn().mockResolvedValue(2),
       save: jest.fn().mockImplementation(async (user) => user as User),
     };
 
@@ -528,6 +531,53 @@ describe('AdminService', () => {
       expect(spyVerify).toHaveBeenCalledTimes(2);
       expect(result.count).toBe(2);
       expect(result.documents).toEqual([mockDocument, mockDocument]);
+    });
+  });
+
+  describe('updateUserRole', () => {
+    it('should assign a new role to user and create CaregiverProfile when promoted to CAREGIVER', async () => {
+      userRepo.findOne = jest.fn().mockResolvedValue({ ...mockClientUser });
+      profileRepo.findOne = jest.fn().mockResolvedValue(null);
+
+      const result = await service.updateUserRole(mockClientUser.id, {
+        role: UserRole.CAREGIVER,
+      });
+
+      expect(result.role).toBe(UserRole.CAREGIVER);
+      expect(profileRepo.create).toHaveBeenCalledWith({ userId: mockClientUser.id });
+      expect(profileRepo.save).toHaveBeenCalled();
+    });
+
+    it('should allow demoting an ADMIN if there are multiple active admins', async () => {
+      userRepo.findOne = jest.fn().mockResolvedValue({ ...mockAdminUser });
+      userRepo.count = jest.fn().mockResolvedValue(2);
+
+      const result = await service.updateUserRole(mockAdminUser.id, {
+        role: UserRole.CLIENT,
+      });
+
+      expect(result.role).toBe(UserRole.CLIENT);
+    });
+
+    it('should throw BadRequestException when attempting to demote the sole remaining administrator', async () => {
+      userRepo.findOne = jest.fn().mockResolvedValue({ ...mockAdminUser });
+      userRepo.count = jest.fn().mockResolvedValue(1);
+
+      await expect(
+        service.updateUserRole(mockAdminUser.id, {
+          role: UserRole.CLIENT,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if user is not found', async () => {
+      userRepo.findOne = jest.fn().mockResolvedValue(null);
+
+      await expect(
+        service.updateUserRole('unknown-id', {
+          role: UserRole.CLIENT,
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
