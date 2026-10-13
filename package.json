@@ -19,7 +19,8 @@
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --forceExit",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json --forceExit",
-    "test:postman": "newman run postman/CareConnect_API.postman_collection.json -e postman/CareConnect.postman_environment.json"
+    "test:postman": "newman run postman/CareConnect_API.postman_collection.json -e postman/CareConnect.postman_environment.json",
+    "test:postman:render": "newman run postman/CareConnect_Render_API.postman_collection.json -e postman/CareConnect_Render.postman_environment.json"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
