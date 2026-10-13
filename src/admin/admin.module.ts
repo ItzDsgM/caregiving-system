@@ -6,6 +6,7 @@ import { User } from '../users/entities/user.entity';
 import { JobOffer } from '../job-offers/entities/job-offer.entity';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
+import { AdminSeedService } from './admin-seed.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AdminController } from './admin.controller';
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
-  exports: [AdminService],
+  providers: [AdminService, AdminSeedService],
+  exports: [AdminService, AdminSeedService],
 })
 export class AdminModule {}
