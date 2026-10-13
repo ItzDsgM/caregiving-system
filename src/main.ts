@@ -54,6 +54,8 @@ async function bootstrap() {
     .addTag('Contact Requests', 'Direct client-caregiver inquiry messaging')
     .addTag('Reviews', 'Verified feedback, ratings, and reputation management')
     .addTag('Admin', 'Document auditing, compliance badges, and user suspension')
+    .addTag('Reports', 'Client modality breakdown and top-served geographical zone analytics')
+    .addTag('History', 'Bidirectional engagement history and work records with privacy protection')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
