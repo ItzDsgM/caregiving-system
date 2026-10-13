@@ -1,19 +1,18 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   ValidationPipe,
   ClassSerializerInterceptor,
-  INestApplication,
 } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import express, { Express } from 'express';
 import helmet from 'helmet';
 import { AppModule, ObserveInstrument } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
-let cachedServer: Express;
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    instrument: ObserveInstrument,
+  });
 
-export function configureApp(app: INestApplication): void {
   // CORS Configuration
   app.enableCors({
     origin: true,
@@ -90,38 +89,10 @@ export function configureApp(app: INestApplication): void {
       requestSnippetsEnabled: false,
     },
   });
-}
 
-async function bootstrapServer(): Promise<Express> {
-  if (!cachedServer) {
-    const expressApp: Express = express();
-    const app = await NestFactory.create(
-      AppModule,
-      new ExpressAdapter(expressApp),
-      {
-        instrument: ObserveInstrument,
-      },
-    );
-
-    configureApp(app);
-    await app.init();
-    cachedServer = expressApp;
-  }
-  return cachedServer;
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port, '0.0.0.0');
+  console.log(`CareConnect API is running on: http://localhost:${port}`);
+  console.log(`Swagger documentation available at: http://localhost:${port}/api/v1/docs`);
 }
-
-// When running locally outside Vercel, start the HTTP server
-if (!process.env.VERCEL) {
-  bootstrapServer().then((server) => {
-    const port = Number(process.env.PORT ?? 3000);
-    server.listen(port, '0.0.0.0', () => {
-      console.log(`CareConnect API is running on: http://localhost:${port}`);
-    });
-  });
-}
-
-// Serverless handler for Vercel Functions
-export default async function handler(req: any, res: any) {
-  const server = await bootstrapServer();
-  server(req, res);
-}
+bootstrap();
