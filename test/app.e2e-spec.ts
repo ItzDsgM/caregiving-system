@@ -599,4 +599,145 @@ describe('CareConnect API (e2e Complete Lifecycle)', () => {
       }
     });
   });
+
+  describe('8. Module 08-Reports', () => {
+    it('GET /api/v1/reports/client-modality - ADMIN should get modality report', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/reports/client-modality')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('totalOffers');
+      expect(res.body).toHaveProperty('totalAcceptedServices');
+      expect(res.body).toHaveProperty('categories');
+      expect(Array.isArray(res.body.categories)).toBe(true);
+      expect(res.body.categories.length).toBe(3);
+    });
+
+    it('GET /api/v1/reports/client-modality - non-admin (CLIENT) should receive 403 Forbidden', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/reports/client-modality')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(403);
+    });
+
+    it('GET /api/v1/reports/top-zones - ADMIN should retrieve top served zones ranking', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/reports/top-zones?limit=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('zones');
+      expect(res.body).toHaveProperty('totalCompletedServices');
+      expect(Array.isArray(res.body.zones)).toBe(true);
+    });
+
+    it('GET /api/v1/reports/summary - ADMIN should retrieve executive summary dashboard', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/reports/summary')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('totalJobOffers');
+      expect(res.body).toHaveProperty('totalHiredServices');
+      expect(res.body).toHaveProperty('modalityBreakdown');
+      expect(res.body).toHaveProperty('topFiveZones');
+    });
+  });
+
+  describe('9. Module 09-History', () => {
+    it('GET /api/v1/history/client - CLIENT should view hired caregivers with duration and safe data', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/history/client')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('data');
+      expect(res.body).toHaveProperty('meta');
+      expect(Array.isArray(res.body.data)).toBe(true);
+      if (res.body.data.length > 0) {
+        const item = res.body.data[0];
+        expect(item).toHaveProperty('contractId');
+        expect(item).toHaveProperty('offerTitle');
+        expect(item).toHaveProperty('timeframe');
+        expect(item.timeframe).toHaveProperty('durationDays');
+        expect(item.timeframe).toHaveProperty('durationFormatted');
+        expect(item.timeframe).toHaveProperty('status');
+        expect(item).toHaveProperty('caregiver');
+        expect(item.caregiver).toHaveProperty('firstName');
+        expect(item.caregiver).not.toHaveProperty('password');
+        expect(item.caregiver).not.toHaveProperty('resetPasswordToken');
+      }
+    });
+
+    it('GET /api/v1/history/client - CAREGIVER should be rejected with 403 Forbidden', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/history/client')
+        .set('Authorization', `Bearer ${caregiverToken}`)
+        .expect(403);
+    });
+
+    it('PATCH /api/v1/admin/users/:id/status - ADMIN reactivates caregiver account', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/admin/users/${caregiverId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: true })
+        .expect(200);
+
+      expect(res.body.isActive).toBe(true);
+    });
+
+    it('GET /api/v1/history/caregiver - CAREGIVER should view clients worked with and safe data', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/history/caregiver')
+        .set('Authorization', `Bearer ${caregiverToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('data');
+      expect(res.body).toHaveProperty('meta');
+      expect(Array.isArray(res.body.data)).toBe(true);
+      if (res.body.data.length > 0) {
+        const item = res.body.data[0];
+        expect(item).toHaveProperty('contractId');
+        expect(item).toHaveProperty('timeframe');
+        expect(item).toHaveProperty('client');
+        expect(item.client).toHaveProperty('firstName');
+        expect(item.client).not.toHaveProperty('password');
+      }
+    });
+
+    it('GET /api/v1/history/caregiver - CLIENT should be rejected with 403 Forbidden', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/history/caregiver')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(403);
+    });
+
+    it('GET /api/v1/history/my-history - should dynamically return history for CLIENT', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/history/my-history')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('data');
+      expect(res.body).toHaveProperty('meta');
+    });
+
+    it('GET /api/v1/history/my-history - should dynamically return history for CAREGIVER', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/history/my-history')
+        .set('Authorization', `Bearer ${caregiverToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('data');
+      expect(res.body).toHaveProperty('meta');
+    });
+
+    it('GET /api/v1/history/my-history - ADMIN should be rejected with 403 Forbidden', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/history/my-history')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(403);
+    });
+  });
 });

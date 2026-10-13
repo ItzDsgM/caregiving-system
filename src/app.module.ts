@@ -20,6 +20,8 @@ import { ApplicationsModule } from './applications/applications.module';
 import { ContactRequestsModule } from './contact-requests/contact-requests.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
+import { HistoryModule } from './history/history.module';
 import { NotificationListener } from './common/listeners/notification.listener';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -77,6 +79,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ContactRequestsModule,
     ReviewsModule,
     AdminModule,
+    ReportsModule,
+    HistoryModule,
   ],
   controllers: [],
   providers: [

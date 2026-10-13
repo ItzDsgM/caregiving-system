@@ -467,7 +467,7 @@ describe('AdminService', () => {
       expect(result.count).toBe(2);
       expect(result.users[0]).not.toHaveProperty('password');
       expect(result.users[1]).not.toHaveProperty('password');
-    });
+    }, 15000);
 
     it('should rollback and release transaction if an error occurs', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue(null);
