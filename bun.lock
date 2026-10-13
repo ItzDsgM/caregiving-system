@@ -5,6 +5,7 @@
     "": {
       "name": "caregiving-system",
       "dependencies": {
+        "@codegenie/serverless-express": "^5.0.0",
         "@nestjs/common": "^12.0.1",
         "@nestjs/config": "^12.0.1",
         "@nestjs/core": "^12.0.1",
@@ -133,6 +134,8 @@
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@0.2.3", "", {}, "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw=="],
 
     "@borewit/text-codec": ["@borewit/text-codec@0.2.2", "", {}, "sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ=="],
+
+    "@codegenie/serverless-express": ["@codegenie/serverless-express@5.0.0", "", {}, "sha512-7+PvSBj4KmPC8PVFDoXZp2cwTr13YIgFsZT55uJhpt7Ml1hJ3IK1Xnw36hr6GYVzLDrEW26oBZt50jamfu6kkw=="],
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
 

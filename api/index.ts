@@ -1,10 +1,20 @@
-import { ValidationPipe, ClassSerializerInterceptor, INestApplication } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import {
+  ValidationPipe,
+  ClassSerializerInterceptor,
+  INestApplication,
+} from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import express, { Express, Request, Response } from 'express';
 import helmet from 'helmet';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppModule, ObserveInstrument } from '../src/app.module';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
-export function configureApp(app: INestApplication): void {
+let cachedServer: Express;
+
+function configureApp(app: INestApplication): void {
+  // CORS Configuration
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -12,6 +22,7 @@ export function configureApp(app: INestApplication): void {
     allowedHeaders: 'Content-Type,Accept,Authorization',
   });
 
+  // Security Headers
   app.use(
     helmet({
       contentSecurityPolicy: false,
@@ -19,8 +30,10 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
+  // Global API Prefix
   app.setGlobalPrefix('api/v1');
 
+  // Global Validation Pipe (Mandatory whitelist & transforms)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,10 +43,13 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
+  // Global Exception Filter (RFC error envelope format)
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // Global Interceptor (DTO class-transformer serialization)
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
+  // OpenAPI / Swagger Documentation
   const swaggerConfig = new DocumentBuilder()
     .setTitle('CareConnect API')
     .setDescription(
@@ -74,4 +90,27 @@ export function configureApp(app: INestApplication): void {
       requestSnippetsEnabled: false,
     },
   });
+}
+
+async function bootstrapServer(): Promise<Express> {
+  if (!cachedServer) {
+    const expressApp: Express = express();
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+      {
+        instrument: ObserveInstrument,
+      },
+    );
+
+    configureApp(app);
+    await app.init();
+    cachedServer = expressApp;
+  }
+  return cachedServer;
+}
+
+export default async function handler(req: Request, res: Response) {
+  const server = await bootstrapServer();
+  server(req, res);
 }
