@@ -1,15 +1,11 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor, INestApplication } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule, ObserveInstrument } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    instrument: ObserveInstrument,
-  });
-
+export function configureApp(app: INestApplication): void {
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -79,8 +75,17 @@ async function bootstrap() {
       requestSnippetsEnabled: false,
     },
   });
+}
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    instrument: ObserveInstrument,
+  });
+
+  configureApp(app);
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
+

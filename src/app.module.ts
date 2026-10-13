@@ -36,29 +36,50 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: parseInt(configService.get<string>('DB_PORT', '5432'), 10),
-        username: configService.get<string>('DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', 'postgres'),
-        database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
-        entities: [
-          User,
-          CaregiverProfile,
-          CaregiverDocument,
-          JobOffer,
-          Application,
-          ContactRequest,
-          Review,
-        ],
-        synchronize:
-          configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
-          configService.get<boolean>('DB_SYNCHRONIZE', true) === true,
-        logging:
-          configService.get<string>('DB_LOGGING', 'false') === 'true' ||
-          configService.get<boolean>('DB_LOGGING', false) === true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const dbSsl = configService.get<string>('DB_SSL');
+        const isSsl =
+          dbSsl === 'true' ||
+          (dbSsl !== 'false' &&
+            databaseUrl != null &&
+            !databaseUrl.includes('localhost') &&
+            !databaseUrl.includes('127.0.0.1'));
+
+        const connectionConfig = databaseUrl
+          ? {
+              url: databaseUrl,
+              ssl: isSsl ? { rejectUnauthorized: false } : false,
+            }
+          : {
+              host: configService.get<string>('DB_HOST', 'localhost'),
+              port: parseInt(configService.get<string>('DB_PORT', '5432'), 10),
+              username: configService.get<string>('DB_USERNAME', 'postgres'),
+              password: configService.get<string>('DB_PASSWORD', 'postgres'),
+              database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
+              ssl: isSsl ? { rejectUnauthorized: false } : false,
+            };
+
+        return {
+          type: 'postgres' as const,
+          ...connectionConfig,
+          entities: [
+            User,
+            CaregiverProfile,
+            CaregiverDocument,
+            JobOffer,
+            Application,
+            ContactRequest,
+            Review,
+          ],
+          synchronize:
+            configService.get<string>('DB_SYNCHRONIZE', 'true') === 'true' ||
+            configService.get<boolean>('DB_SYNCHRONIZE', true) === true,
+          logging:
+            configService.get<string>('DB_LOGGING', 'false') === 'true' ||
+            configService.get<boolean>('DB_LOGGING', false) === true,
+        };
+      },
     }),
     ThrottlerModule.forRoot([
       {
