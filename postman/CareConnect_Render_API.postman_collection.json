@@ -17,7 +17,8 @@
               "script": {
                 "exec": [
                   "const ts = Date.now();",
-                  "pm.environment.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");"
+                  "pm.environment.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -32,6 +33,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"caregiverId\", json.id);",
+                  "    pm.collectionVariables.set(\"caregiverId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -70,7 +72,8 @@
               "script": {
                 "exec": [
                   "const ts = Date.now();",
-                  "pm.environment.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");"
+                  "pm.environment.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -85,6 +88,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"clientId\", json.id);",
+                  "    pm.collectionVariables.set(\"clientId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -124,7 +128,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set(\"bulkCgEmail\", \"bulk.cg.\" + ts + \"@example.com\");",
-                  "pm.environment.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");"
+                  "pm.collectionVariables.set(\"bulkCgEmail\", \"bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -222,7 +228,9 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"caregiverToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"caregiverToken\", json.access_token);",
                   "    pm.environment.set(\"token\", json.access_token);",
+                  "    pm.collectionVariables.set(\"token\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -266,6 +274,7 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"clientToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"clientToken\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -309,6 +318,7 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"adminToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"adminToken\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -485,6 +495,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"documentId\", json.id);",
+                  "    pm.collectionVariables.set(\"documentId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -545,6 +556,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"deleteDocId\", json.id);",
+                  "    pm.collectionVariables.set(\"deleteDocId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -652,6 +664,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"jobOfferId\", json.id);",
+                  "    pm.collectionVariables.set(\"jobOfferId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -841,6 +854,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"offerToCloseId\", json.id);",
+                  "    pm.collectionVariables.set(\"offerToCloseId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -948,6 +962,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"applicationId\", json.id);",
+                  "    pm.collectionVariables.set(\"applicationId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1150,6 +1165,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"contactRequestId\", json.id);",
+                  "    pm.collectionVariables.set(\"contactRequestId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1345,7 +1361,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set('unworkedEmail', 'caregiver.unworked.' + ts + '@example.com');",
-                  "pm.environment.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));"
+                  "pm.collectionVariables.set('unworkedEmail', 'caregiver.unworked.' + ts + '@example.com');",
+                  "pm.environment.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));",
+                  "pm.collectionVariables.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));"
                 ],
                 "type": "text/javascript"
               }
@@ -1360,6 +1378,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"unworkedCaregiverId\", json.id);",
+                  "    pm.collectionVariables.set(\"unworkedCaregiverId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1587,7 +1606,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set(\"adminBulkCgEmail\", \"admin.bulk.cg.\" + ts + \"@example.com\");",
-                  "pm.environment.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");"
+                  "pm.collectionVariables.set(\"adminBulkCgEmail\", \"admin.bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -2204,6 +2225,111 @@
     {
       "key": "baseUrl",
       "value": "https://caregiving-system.onrender.com/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "caregiverEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caregiverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bulkCgEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bulkClEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caregiverToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deleteDocId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobOfferId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offerToCloseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedPhone",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedCaregiverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminBulkCgEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminBulkClEmail",
+      "value": "",
       "type": "string"
     }
   ]

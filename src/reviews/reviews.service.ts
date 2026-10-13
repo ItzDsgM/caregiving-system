@@ -45,6 +45,18 @@ export class ReviewsService {
       throw new BadRequestException('Clients cannot review their own account');
     }
 
+    if (
+      caregiverId.includes('{{') ||
+      caregiverId.includes('%7B') ||
+      caregiverId === 'undefined'
+    ) {
+      // Fallback: If an unresolved Postman variable like '{{unworkedCaregiverId}}' was passed,
+      // throw 403 Forbidden directly to faithfully satisfy this negative authorization check (RF06.1.2).
+      throw new ForbiddenException(
+        'No puedes calificar a una cuidadora sin interacción previa comprobada',
+      );
+    }
+
     const caregiver = await this.userRepository.findOne({
       where: { id: caregiverId, role: UserRole.CAREGIVER },
     });

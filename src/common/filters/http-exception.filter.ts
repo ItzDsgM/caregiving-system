@@ -28,6 +28,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else {
         message = exception.message;
       }
+    } else if (
+      (exception as any)?.code === '22P02' ||
+      ((exception as Error)?.message &&
+        (exception as Error).message.includes('invalid input syntax for type uuid'))
+    ) {
+      status = HttpStatus.BAD_REQUEST;
+      message = 'Invalid input syntax for UUID parameter';
+      this.logger.warn(
+        `Handled 22P02 invalid UUID syntax: ${(exception as Error).message}`,
+      );
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
     }

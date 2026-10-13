@@ -17,7 +17,8 @@
               "script": {
                 "exec": [
                   "const ts = Date.now();",
-                  "pm.environment.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");"
+                  "pm.environment.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"caregiverEmail\", \"caregiver.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -32,6 +33,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"caregiverId\", json.id);",
+                  "    pm.collectionVariables.set(\"caregiverId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -40,12 +42,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{caregiverEmail}}\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Gomez\",\n  \"phone\": \"+573001234567\",\n  \"role\": \"CAREGIVER\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
           }
         },
         {
@@ -56,7 +72,8 @@
               "script": {
                 "exec": [
                   "const ts = Date.now();",
-                  "pm.environment.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");"
+                  "pm.environment.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"clientEmail\", \"client.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -71,6 +88,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"clientId\", json.id);",
+                  "    pm.collectionVariables.set(\"clientId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -79,12 +97,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Andres\",\n  \"lastName\": \"Torres\",\n  \"phone\": \"+573109876543\",\n  \"role\": \"CLIENT\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
           }
         },
         {
@@ -96,7 +128,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set(\"bulkCgEmail\", \"bulk.cg.\" + ts + \"@example.com\");",
-                  "pm.environment.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");"
+                  "pm.collectionVariables.set(\"bulkCgEmail\", \"bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"bulkClEmail\", \"bulk.cl.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -120,12 +154,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"users\": [\n    {\n      \"email\": \"{{bulkCgEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"BulkCaregiver\",\n      \"lastName\": \"Test\",\n      \"phone\": \"+573001112233\",\n      \"role\": \"CAREGIVER\"\n    },\n    {\n      \"email\": \"{{bulkClEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"BulkClient\",\n      \"lastName\": \"Test\",\n      \"phone\": \"+573104445566\",\n      \"role\": \"CLIENT\"\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/bulk-register", "host": ["{{baseUrl}}"], "path": ["auth", "bulk-register"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/bulk-register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "bulk-register"
+              ]
+            }
           }
         },
         {
@@ -145,12 +193,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin.hacker@example.com\",\n  \"password\": \"AdminSecret123!\",\n  \"firstName\": \"Fake\",\n  \"lastName\": \"Admin\",\n  \"phone\": \"+573201112233\",\n  \"role\": \"ADMIN\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
           }
         },
         {
@@ -166,7 +228,9 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"caregiverToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"caregiverToken\", json.access_token);",
                   "    pm.environment.set(\"token\", json.access_token);",
+                  "    pm.collectionVariables.set(\"token\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -175,12 +239,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{caregiverEmail}}\",\n  \"password\": \"SecurePass123!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
@@ -196,6 +274,7 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"clientToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"clientToken\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -204,12 +283,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"SecurePass123!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
@@ -225,6 +318,7 @@
                   "const json = pm.response.json();",
                   "if (json.access_token) {",
                   "    pm.environment.set(\"adminToken\", json.access_token);",
+                  "    pm.collectionVariables.set(\"adminToken\", json.access_token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -233,12 +327,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@careconnect.com\",\n  \"password\": \"AdminSecret123!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
@@ -257,10 +365,28 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
           }
         },
         {
@@ -280,12 +406,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{caregiverEmail}}\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            }
           }
         }
       ]
@@ -309,14 +449,37 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"bio\": \"Certified nurse with over 6 years of hospital and home care experience for geriatric patients.\",\n  \"yearsOfExperience\": 6,\n  \"specialties\": [\"ELDERLY_CARE\", \"PHYSICAL_DISABILITY\"],\n  \"hourlyRate\": 35.00,\n  \"city\": \"Bogota\",\n  \"neighborhoods\": [\"Usaquen\", \"Chapinero\"],\n  \"maxCoverageRadiusKm\": 15,\n  \"availability\": [\n    {\n      \"day\": \"MONDAY\",\n      \"shifts\": [\"MORNING\", \"AFTERNOON\"]\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/caregivers/me", "host": ["{{baseUrl}}"], "path": ["caregivers", "me"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "me"
+              ]
+            }
           }
         },
         {
@@ -332,6 +495,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"documentId\", json.id);",
+                  "    pm.collectionVariables.set(\"documentId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -339,17 +503,44 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [],
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "file", "type": "text", "value": "archivo1.png" },
-                { "key": "documentType", "value": "ID_CARD", "type": "text" }
+                {
+                  "key": "file",
+                  "type": "text",
+                  "value": "archivo1.png"
+                },
+                {
+                  "key": "documentType",
+                  "value": "ID_CARD",
+                  "type": "text"
+                }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/caregivers/me/documents", "host": ["{{baseUrl}}"], "path": ["caregivers", "me", "documents"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/me/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "me",
+                "documents"
+              ]
+            }
           }
         },
         {
@@ -365,6 +556,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"deleteDocId\", json.id);",
+                  "    pm.collectionVariables.set(\"deleteDocId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -372,17 +564,44 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [],
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "file", "type": "text", "value": "doc-to-delete.png" },
-                { "key": "documentType", "value": "CRIMINAL_RECORD", "type": "text" }
+                {
+                  "key": "file",
+                  "type": "text",
+                  "value": "doc-to-delete.png"
+                },
+                {
+                  "key": "documentType",
+                  "value": "CRIMINAL_RECORD",
+                  "type": "text"
+                }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/caregivers/me/documents", "host": ["{{baseUrl}}"], "path": ["caregivers", "me", "documents"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/me/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "me",
+                "documents"
+              ]
+            }
           }
         },
         {
@@ -401,10 +620,30 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/caregivers/me/documents/{{deleteDocId}}", "host": ["{{baseUrl}}"], "path": ["caregivers", "me", "documents", "{{deleteDocId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/me/documents/{{deleteDocId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "me",
+                "documents",
+                "{{deleteDocId}}"
+              ]
+            }
           }
         }
       ]
@@ -425,6 +664,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"jobOfferId\", json.id);",
+                  "    pm.collectionVariables.set(\"jobOfferId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -432,14 +672,36 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"Compassionate caregiver needed for senior father in Bogota\",\n  \"description\": \"Looking for a certified caregiver to provide daily living and medication assistance.\",\n  \"careType\": \"ELDERLY_CARE\",\n  \"locationCity\": \"Bogota\",\n  \"locationZone\": \"Usaquen\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"requiredSchedule\": [\n    {\n      \"day\": \"MONDAY\",\n      \"shifts\": [\"MORNING\"]\n    }\n  ],\n  \"budgetMin\": 25.00,\n  \"budgetMax\": 40.00\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers", "host": ["{{baseUrl}}"], "path": ["job-offers"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers"
+              ]
+            }
           }
         },
         {
@@ -463,14 +725,37 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"offers\": [\n    {\n      \"title\": \"Bulk Weekend Companion for Senior in Bogota\",\n      \"description\": \"Offering regular weekend companionship and basic medication reminders for elderly father.\",\n      \"careType\": \"ELDERLY_CARE\",\n      \"locationCity\": \"Bogota\",\n      \"locationZone\": \"Suba\",\n      \"startDate\": \"2026-12-01\",\n      \"endDate\": \"2026-12-31\",\n      \"requiredSchedule\": [{ \"day\": \"SATURDAY\", \"shifts\": [\"MORNING\"] }],\n      \"budgetMin\": 30,\n      \"budgetMax\": 45\n    },\n    {\n      \"title\": \"Bulk Afternoon Child Care and Homework Help\",\n      \"description\": \"Looking for evening assistance with children homework and dinner preparation.\",\n      \"careType\": \"CHILD_CARE\",\n      \"locationCity\": \"Bogota\",\n      \"locationZone\": \"Teusaquillo\",\n      \"startDate\": \"2026-12-05\",\n      \"endDate\": \"2026-12-28\",\n      \"requiredSchedule\": [{ \"day\": \"MONDAY\", \"shifts\": [\"AFTERNOON\"] }],\n      \"budgetMin\": 25,\n      \"budgetMax\": 35\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers/bulk", "host": ["{{baseUrl}}"], "path": ["job-offers", "bulk"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "bulk"
+              ]
+            }
           }
         },
         {
@@ -491,7 +776,29 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/job-offers?page=1&limit=10&city=Bogota", "host": ["{{baseUrl}}"], "path": ["job-offers"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "city", "value": "Bogota" }] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers?page=1&limit=10&city=Bogota",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "city",
+                  "value": "Bogota"
+                }
+              ]
+            }
           }
         },
         {
@@ -510,10 +817,28 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/job-offers/my-offers", "host": ["{{baseUrl}}"], "path": ["job-offers", "my-offers"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/my-offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "my-offers"
+              ]
+            }
           }
         },
         {
@@ -529,6 +854,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"offerToCloseId\", json.id);",
+                  "    pm.collectionVariables.set(\"offerToCloseId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -536,14 +862,36 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"Temporary offer for status transition test\",\n  \"description\": \"Offer created exclusively to test CLOSED transition safely.\",\n  \"careType\": \"ELDERLY_CARE\",\n  \"locationCity\": \"Bogota\",\n  \"locationZone\": \"Chapinero\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"requiredSchedule\": [{ \"day\": \"MONDAY\", \"shifts\": [\"MORNING\"] }],\n  \"budgetMin\": 20.00,\n  \"budgetMax\": 35.00\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers", "host": ["{{baseUrl}}"], "path": ["job-offers"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers"
+              ]
+            }
           }
         },
         {
@@ -562,14 +910,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CLOSED\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers/{{offerToCloseId}}/status", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{offerToCloseId}}", "status"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/{{offerToCloseId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "{{offerToCloseId}}",
+                "status"
+              ]
+            }
           }
         }
       ]
@@ -590,6 +962,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"applicationId\", json.id);",
+                  "    pm.collectionVariables.set(\"applicationId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -597,14 +970,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"coverLetter\": \"I am deeply experienced with elderly assistance and available on your preferred schedule.\",\n  \"proposedRate\": 30.00\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "apply"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "{{jobOfferId}}",
+                "apply"
+              ]
+            }
           }
         },
         {
@@ -623,14 +1020,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"coverLetter\": \"Duplicate application attempt with identical candidate.\",\n  \"proposedRate\": 30.00\n}"
             },
-            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "apply"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "{{jobOfferId}}",
+                "apply"
+              ]
+            }
           }
         },
         {
@@ -649,10 +1070,29 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/applications", "host": ["{{baseUrl}}"], "path": ["job-offers", "{{jobOfferId}}", "applications"] }
+            "url": {
+              "raw": "{{baseUrl}}/job-offers/{{jobOfferId}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-offers",
+                "{{jobOfferId}}",
+                "applications"
+              ]
+            }
           }
         },
         {
@@ -673,14 +1113,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/applications/{{applicationId}}/status", "host": ["{{baseUrl}}"], "path": ["applications", "{{applicationId}}", "status"] }
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}",
+                "status"
+              ]
+            }
           }
         }
       ]
@@ -701,6 +1165,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"contactRequestId\", json.id);",
+                  "    pm.collectionVariables.set(\"contactRequestId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -708,14 +1173,36 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"caregiverId\": \"{{caregiverId}}\",\n  \"initialMessage\": \"Hello Laura, I saw your verified profile and would like to coordinate home care services.\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/contact-requests", "host": ["{{baseUrl}}"], "path": ["contact-requests"] }
+            "url": {
+              "raw": "{{baseUrl}}/contact-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact-requests"
+              ]
+            }
           }
         },
         {
@@ -736,14 +1223,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}/respond", "host": ["{{baseUrl}}"], "path": ["contact-requests", "{{contactRequestId}}", "respond"] }
+            "url": {
+              "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact-requests",
+                "{{contactRequestId}}",
+                "respond"
+              ]
+            }
           }
         },
         {
@@ -762,10 +1273,28 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}", "host": ["{{baseUrl}}"], "path": ["contact-requests", "{{contactRequestId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/contact-requests/{{contactRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact-requests",
+                "{{contactRequestId}}"
+              ]
+            }
           }
         }
       ]
@@ -789,14 +1318,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Exceptional support, compassionate and strictly followed medical instructions.\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews", "host": ["{{baseUrl}}"], "path": ["caregivers", "{{caregiverId}}", "reviews"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "{{caregiverId}}",
+                "reviews"
+              ]
+            }
           }
         },
         {
@@ -808,7 +1361,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set('unworkedEmail', 'caregiver.unworked.' + ts + '@example.com');",
-                  "pm.environment.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));"
+                  "pm.collectionVariables.set('unworkedEmail', 'caregiver.unworked.' + ts + '@example.com');",
+                  "pm.environment.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));",
+                  "pm.collectionVariables.set('unworkedPhone', '+57300' + Math.floor(1000000 + Math.random() * 9000000));"
                 ],
                 "type": "text/javascript"
               }
@@ -823,6 +1378,7 @@
                   "const json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.environment.set(\"unworkedCaregiverId\", json.id);",
+                  "    pm.collectionVariables.set(\"unworkedCaregiverId\", json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -831,12 +1387,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{unworkedEmail}}\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Unworked\",\n  \"lastName\": \"Caregiver\",\n  \"phone\": \"{{unworkedPhone}}\",\n  \"role\": \"CAREGIVER\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
           }
         },
         {
@@ -855,14 +1425,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rating\": 1,\n  \"comment\": \"Fraudulent review without prior completed service interaction.\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/caregivers/{{unworkedCaregiverId}}/reviews", "host": ["{{baseUrl}}"], "path": ["caregivers", "{{unworkedCaregiverId}}", "reviews"] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/{{unworkedCaregiverId}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "{{unworkedCaregiverId}}",
+                "reviews"
+              ]
+            }
           }
         },
         {
@@ -883,7 +1477,27 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["caregivers", "{{caregiverId}}", "reviews"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+            "url": {
+              "raw": "{{baseUrl}}/caregivers/{{caregiverId}}/reviews?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caregivers",
+                "{{caregiverId}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
           }
         }
       ]
@@ -907,10 +1521,29 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/admin/documents/pending", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "pending"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/documents/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "documents",
+                "pending"
+              ]
+            }
           }
         },
         {
@@ -929,14 +1562,39 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"APPROVED\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/admin/documents/{{documentId}}/verify", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "{{documentId}}", "verify"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/documents/{{documentId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "documents",
+                "{{documentId}}",
+                "verify"
+              ]
+            }
           }
         },
         {
@@ -948,7 +1606,9 @@
                 "exec": [
                   "const ts = Date.now();",
                   "pm.environment.set(\"adminBulkCgEmail\", \"admin.bulk.cg.\" + ts + \"@example.com\");",
-                  "pm.environment.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");"
+                  "pm.collectionVariables.set(\"adminBulkCgEmail\", \"admin.bulk.cg.\" + ts + \"@example.com\");",
+                  "pm.environment.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");",
+                  "pm.collectionVariables.set(\"adminBulkClEmail\", \"admin.bulk.cl.\" + ts + \"@example.com\");"
                 ],
                 "type": "text/javascript"
               }
@@ -971,14 +1631,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"users\": [\n    {\n      \"email\": \"{{adminBulkCgEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"AdminBulk\",\n      \"lastName\": \"Caregiver\",\n      \"phone\": \"+573129998877\",\n      \"role\": \"CAREGIVER\"\n    },\n    {\n      \"email\": \"{{adminBulkClEmail}}\",\n      \"password\": \"SecurePass123!\",\n      \"firstName\": \"AdminBulk\",\n      \"lastName\": \"Client\",\n      \"phone\": \"+573129998866\",\n      \"role\": \"CLIENT\"\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/admin/users/bulk", "host": ["{{baseUrl}}"], "path": ["admin", "users", "bulk"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "bulk"
+              ]
+            }
           }
         },
         {
@@ -1002,14 +1686,38 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{documentId}}\",\n      \"status\": \"APPROVED\"\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/admin/documents/bulk-verify", "host": ["{{baseUrl}}"], "path": ["admin", "documents", "bulk-verify"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/documents/bulk-verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "documents",
+                "bulk-verify"
+              ]
+            }
           }
         },
         {
@@ -1028,14 +1736,39 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"isActive\": false,\n  \"suspensionReason\": \"Account suspended for terms of service violations.\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{caregiverId}}", "status"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{caregiverId}}",
+                "status"
+              ]
+            }
           }
         },
         {
@@ -1058,14 +1791,39 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"isActive\": true\n}"
             },
-            "url": { "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{caregiverId}}", "status"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{caregiverId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{caregiverId}}",
+                "status"
+              ]
+            }
           }
         }
       ]
@@ -1094,9 +1852,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/reports/client-modality", "host": ["{{baseUrl}}"], "path": ["reports", "client-modality"] }
+            "url": {
+              "raw": "{{baseUrl}}/reports/client-modality",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "client-modality"
+              ]
+            }
           }
         },
         {
@@ -1120,9 +1896,33 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/reports/top-zones?limit=5", "host": ["{{baseUrl}}"], "path": ["reports", "top-zones"], "query": [{ "key": "limit", "value": "5" }] }
+            "url": {
+              "raw": "{{baseUrl}}/reports/top-zones?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "top-zones"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
           }
         },
         {
@@ -1146,9 +1946,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/reports/summary", "host": ["{{baseUrl}}"], "path": ["reports", "summary"] }
+            "url": {
+              "raw": "{{baseUrl}}/reports/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ]
+            }
           }
         },
         {
@@ -1167,9 +1985,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/reports/summary", "host": ["{{baseUrl}}"], "path": ["reports", "summary"] }
+            "url": {
+              "raw": "{{baseUrl}}/reports/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ]
+            }
           }
         }
       ]
@@ -1198,9 +2034,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/history/client", "host": ["{{baseUrl}}"], "path": ["history", "client"] }
+            "url": {
+              "raw": "{{baseUrl}}/history/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "history",
+                "client"
+              ]
+            }
           }
         },
         {
@@ -1224,9 +2078,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/history/caregiver", "host": ["{{baseUrl}}"], "path": ["history", "caregiver"] }
+            "url": {
+              "raw": "{{baseUrl}}/history/caregiver",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "history",
+                "caregiver"
+              ]
+            }
           }
         },
         {
@@ -1245,9 +2117,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/history/my-history", "host": ["{{baseUrl}}"], "path": ["history", "my-history"] }
+            "url": {
+              "raw": "{{baseUrl}}/history/my-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "history",
+                "my-history"
+              ]
+            }
           }
         },
         {
@@ -1266,9 +2156,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{caregiverToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caregiverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/history/my-history", "host": ["{{baseUrl}}"], "path": ["history", "my-history"] }
+            "url": {
+              "raw": "{{baseUrl}}/history/my-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "history",
+                "my-history"
+              ]
+            }
           }
         },
         {
@@ -1287,12 +2195,142 @@
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/history/caregiver", "host": ["{{baseUrl}}"], "path": ["history", "caregiver"] }
+            "url": {
+              "raw": "{{baseUrl}}/history/caregiver",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "history",
+                "caregiver"
+              ]
+            }
           }
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "caregiverEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caregiverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bulkCgEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bulkClEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caregiverToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deleteDocId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobOfferId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offerToCloseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedPhone",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "unworkedCaregiverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminBulkCgEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminBulkClEmail",
+      "value": "",
+      "type": "string"
     }
   ]
 }
