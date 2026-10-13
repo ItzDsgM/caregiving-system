@@ -50,6 +50,9 @@ describe('UsersService', () => {
         suspensionReason: null,
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        isTwoFactorEnabled: false,
+        twoFactorSecret: null,
+        lastLogoutAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -109,6 +112,9 @@ describe('UsersService', () => {
         suspensionReason: null,
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        isTwoFactorEnabled: false,
+        twoFactorSecret: null,
+        lastLogoutAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

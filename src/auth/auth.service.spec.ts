@@ -6,7 +6,6 @@ import {
   ConflictException,
   ForbiddenException,
   UnauthorizedException,
-  NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
@@ -206,6 +205,9 @@ describe('AuthService', () => {
         suspensionReason: null,
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        isTwoFactorEnabled: false,
+        twoFactorSecret: null,
+        lastLogoutAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -214,9 +216,12 @@ describe('AuthService', () => {
 
       const result = await authService.login(loginDto);
 
-      expect(result.access_token).toBe('signed-jwt-token');
-      expect(result.user).toHaveProperty('id', 'user-uuid-1');
-      expect(result.user).not.toHaveProperty('password');
+      expect('access_token' in result).toBe(true);
+      if ('access_token' in result) {
+        expect(result.access_token).toBe('signed-jwt-token');
+        expect(result.user).toHaveProperty('id', 'user-uuid-1');
+        expect(result.user).not.toHaveProperty('password');
+      }
       expect(jwtService.signAsync).toHaveBeenCalledWith({
         sub: mockUser.id,
         email: mockUser.email,

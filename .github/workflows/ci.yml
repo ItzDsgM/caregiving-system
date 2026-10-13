@@ -37,8 +37,8 @@ jobs:
       - name: Linter check
         run: bun run lint
 
-      - name: Unit tests
-        run: bun run test
+      - name: Unit tests & coverage
+        run: bun run test:cov
 
       - name: Build
         run: bun run build
