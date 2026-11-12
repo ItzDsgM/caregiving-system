@@ -5,12 +5,14 @@ docs/
 prettier.config.*
 
 tsconfig.build.tsbuildinfo
-docker-compose.yml
 .env
 
 # compiled output
 /dist
+dist
+.next
 /node_modules
+node_modules
 /build
 
 # Logs

@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: careconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-careconnect_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-careconnect_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: careconnect-backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_DATABASE: ${DB_DATABASE:-careconnect_db}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_careconnect_production_change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@careconnect.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminSecret123!}
+      ADMIN_AUTO_SEED: ${ADMIN_AUTO_SEED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend_uploads:/usr/src/app/uploads
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: careconnect-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local

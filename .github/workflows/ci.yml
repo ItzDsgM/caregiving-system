@@ -35,7 +35,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Type check (TypeScript)
-        run: bun x tsc --noEmit -p tsconfig.json
+        run: |
+          bun x tsc --noEmit -p apps/backend/tsconfig.json
+          bun x tsc --noEmit -p apps/frontend/tsconfig.json
 
       - name: Linter check
         run: bun run lint
@@ -51,7 +53,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: coverage
+          path: apps/backend/coverage
           retention-days: 7
 
   e2e:
@@ -155,6 +157,7 @@ jobs:
 
       - name: Start API and Run Postman Collection via Newman
         run: |
+          cd apps/backend
           node dist/main &
           SERVER_PID=$!
           echo "Waiting for CareConnect API on http://localhost:3000..."
