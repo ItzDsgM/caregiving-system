@@ -77,8 +77,11 @@ export function NewReviewView() {
     };
   }, [effectiveCaregiverId]);
 
-  const existingReviewRecord = effectiveCaregiverId
-    ? getReviewedCaregiverRecord(reviewedMap, user?.id, effectiveCaregiverId)
+  const resolvedCaregiverUserId =
+    caregiverProfile?.userId ?? effectiveCaregiverId;
+
+  const existingReviewRecord = resolvedCaregiverUserId
+    ? getReviewedCaregiverRecord(reviewedMap, user?.id, resolvedCaregiverUserId)
     : null;
 
   const caregiverDisplayName = caregiverProfile
@@ -223,7 +226,7 @@ export function NewReviewView() {
             </div>
           ) : (
             <ReviewForm
-              caregiverId={effectiveCaregiverId}
+              caregiverId={resolvedCaregiverUserId}
               onSuccess={() => {
                 toast.success(
                   'Reseña publicada',
