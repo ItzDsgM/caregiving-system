@@ -158,8 +158,8 @@ function DocumentPreviewInner({
 
         {isImage && resolvedUrl && status !== 'unavailable' ? (
           <div
-            className={`flex items-center justify-center transition-transform duration-150 ${
-              status === 'loading' ? 'hidden' : 'block'
+            className={`transition-transform duration-150 ${
+              status === 'loading' ? 'hidden' : 'flex items-center justify-center'
             }`}
             style={{
               transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
