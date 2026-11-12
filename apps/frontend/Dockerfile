@@ -7,7 +7,10 @@ COPY package.json bun.lock tsconfig.json next.config.ts eslint.config.mjs ./
 RUN bun install --frozen-lockfile
 
 COPY app ./app
+COPY components ./components
+COPY lib ./lib
 COPY public ./public
+COPY proxy.ts ./proxy.ts
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

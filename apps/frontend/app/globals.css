@@ -1,26 +1,313 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --brand: #0d9488;
+  --brand-hover: #0f766e;
+  --brand-soft: #f0fdfa;
+  --muted: #475569;
+
+  --status-success: #059669;
+  --status-success-bg: #ecfdf5;
+  --status-success-border: #a7f3d0;
+
+  --status-warning: #d97706;
+  --status-warning-bg: #fffbeb;
+  --status-warning-border: #fde68a;
+
+  --status-danger: #e11d48;
+  --status-danger-bg: #fff1f2;
+  --status-danger-border: #fecdd3;
+
+  --status-info: #3b82f6;
+  --status-info-bg: #eff6ff;
+  --status-info-border: #bfdbfe;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Native control branding with accent-color & high-contrast fallback */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  progress {
+    accent-color: #0d9488;
+  }
+
+  @supports not (accent-color: #0d9488) {
+    input[type="checkbox"],
+    input[type="radio"] {
+      appearance: none;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid #475569;
+      background-color: #ffffff;
+      display: inline-grid;
+      place-content: center;
+      vertical-align: middle;
+    }
+
+    input[type="checkbox"] {
+      border-radius: 4px;
+    }
+
+    input[type="radio"] {
+      border-radius: 9999px;
+    }
+
+    input[type="checkbox"]:checked,
+    input[type="radio"]:checked {
+      border-color: #0f766e;
+      background-color: #0d9488;
+    }
+
+    input[type="checkbox"]:checked::before {
+      content: "";
+      width: 0.5rem;
+      height: 0.5rem;
+      background-color: #ffffff;
+      clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    }
+
+    input[type="radio"]:checked::before {
+      content: "";
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 9999px;
+      background-color: #ffffff;
+    }
+
+    progress {
+      appearance: none;
+      background-color: #e2e8f0;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    progress::-webkit-progress-bar {
+      background-color: #e2e8f0;
+      border-radius: 9999px;
+    }
+
+    progress::-webkit-progress-value {
+      background-color: #0d9488;
+      border-radius: 9999px;
+    }
+
+    progress::-moz-progress-bar {
+      background-color: #0d9488;
+      border-radius: 9999px;
+    }
+  }
+
+  /* Post-interaction validation feedback (never premature while typing) */
+  input:user-invalid,
+  select:user-invalid,
+  textarea:user-invalid,
+  [aria-invalid="true"] {
+    border-color: #e11d48 !important;
+  }
+
+  input:user-invalid:focus,
+  select:user-invalid:focus,
+  textarea:user-invalid:focus,
+  [aria-invalid="true"]:focus {
+    outline-color: #e11d48;
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.16);
+  }
+
+  /* Native top-layer modal <dialog> */
+  dialog:modal {
+    margin: auto;
+    max-height: calc(100dvh - 2rem);
+    max-width: calc(100vw - 2rem);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: #0f172a;
+    padding: 0;
+    box-shadow:
+      0 20px 25px -5px rgba(15, 23, 42, 0.12),
+      0 8px 10px -6px rgba(15, 23, 42, 0.08);
+    overscroll-behavior: contain;
+  }
+
+  dialog::backdrop {
+    background-color: rgba(15, 23, 42, 0.48);
+    backdrop-filter: blur(2px);
+    overscroll-behavior: contain;
+  }
+
+  /* Native top-layer manual popover for toast notifications */
+  [popover="manual"].cc-toast-popover {
+    position: fixed;
+    inset: unset;
+    top: 1.25rem;
+    right: 1.25rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    overflow: visible;
+    max-width: calc(100vw - 2rem);
+    pointer-events: none;
+  }
+
+  @media (max-width: 640px) {
+    [popover="manual"].cc-toast-popover {
+      top: 0.75rem;
+      right: 0.75rem;
+      left: 0.75rem;
+      max-width: none;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Tabular numbers helper for Geist Mono metrics, rates, TOTP & IDs */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible internal view tabs with non-color ::after indicator */
+.cc-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  transition: color 150ms ease;
+  white-space: nowrap;
+}
+
+.cc-tab:hover {
+  color: #0f172a;
+}
+
+.cc-tab[aria-selected="true"] {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.cc-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 9999px;
+  background-color: #0d9488;
+}
+
+/* CSS Subgrid helpers for catalog & role selection cards */
+.cc-subgrid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.25rem;
+}
+
+.cc-subgrid-card {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 4;
+}
+
+/* Performance containment for dense queues and lists */
+.cc-virtual-item {
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
+}
+
+/* Container-query responsive tables (collapse to cards below 600px) */
+.cc-table-container {
+  container-type: inline-size;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cc-responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cc-responsive-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8fafc;
+}
+
+@container (max-width: 600px) {
+  .cc-responsive-table,
+  .cc-responsive-table tbody,
+  .cc-responsive-table tr,
+  .cc-responsive-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .cc-responsive-table thead {
+    display: none;
+  }
+
+  .cc-responsive-table tr {
+    margin-bottom: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .cc-responsive-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.5rem 0.25rem;
+    text-align: right;
+  }
+
+  .cc-responsive-table td:last-child {
+    border-bottom: none;
+  }
+
+  .cc-responsive-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-align: left;
+  }
 }
