@@ -783,12 +783,13 @@ export function CaregiverProfileView() {
 
           {/* Biografía */}
           <fieldset className="space-y-2 border-t border-slate-100 pt-6">
+            <legend className="text-base font-semibold text-slate-900">
+              Biografía profesional
+            </legend>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label
-                htmlFor="bio"
-                className="text-base font-semibold text-slate-900"
-              >
-                Biografía profesional
+              <label htmlFor="bio" className="text-xs text-slate-500">
+                Describe tu formación, tipo de pacientes que has atendido,
+                habilidades médicas o terapéuticas y enfoque de cuidado.
               </label>
               <span
                 className={`font-mono text-xs tabular-nums ${
@@ -802,10 +803,6 @@ export function CaregiverProfileView() {
                 {bioLength} / 1500 caracteres (mínimo 50)
               </span>
             </div>
-            <p className="text-xs text-slate-500">
-              Describe tu formación, tipo de pacientes que has atendido,
-              habilidades médicas o terapéuticas y enfoque de cuidado.
-            </p>
             <textarea
               id="bio"
               rows={5}
@@ -833,12 +830,12 @@ export function CaregiverProfileView() {
 
           {/* Ubicación y Cobertura */}
           <fieldset className="space-y-4 border-t border-slate-100 pt-6">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-teal-600" aria-hidden />
-              <legend className="text-base font-semibold text-slate-900">
+            <legend className="text-base font-semibold text-slate-900">
+              <span className="inline-flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-teal-600" aria-hidden />
                 Ciudad y cobertura geográfica
-              </legend>
-            </div>
+              </span>
+            </legend>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
