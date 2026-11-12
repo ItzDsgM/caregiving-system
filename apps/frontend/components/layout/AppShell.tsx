@@ -189,13 +189,35 @@ const SECURITY_ROUTE_BY_ROLE: Record<UserRole, string> = {
   ADMIN: '/admin/settings/security',
 };
 
+const ROUTABLE_PORTAL_PATHS = new Set<string>([
+  '/client/dashboard',
+  '/client/offers',
+  '/client/offers/create',
+  '/client/inquiries',
+  '/client/history',
+  '/client/reviews/new',
+  '/client/settings/security',
+  '/caregiver/dashboard',
+  '/caregiver/profile',
+  '/caregiver/documents',
+  '/caregiver/applications',
+  '/caregiver/inquiries',
+  '/caregiver/history',
+  '/caregiver/settings/security',
+  '/admin/dashboard',
+  '/admin/documents',
+  '/admin/users',
+  '/admin/reports',
+  '/admin/settings/security',
+]);
+
 function isUuidLike(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f-]{4,}$/i.test(segment) || /^\d+$/.test(segment);
 }
 
 interface BreadcrumbItem {
   label: string;
-  href: string;
+  href: string | null;
 }
 
 function buildBreadcrumbs(pathname: string): BreadcrumbItem[] {
@@ -217,9 +239,12 @@ function buildBreadcrumbs(pathname: string): BreadcrumbItem[] {
     }
 
     const isRoleRoot = index === 0;
-    const href = isRoleRoot
+    const candidateHref = isRoleRoot
       ? `${accumulated}/dashboard`
       : accumulated;
+    const href = ROUTABLE_PORTAL_PATHS.has(candidateHref)
+      ? candidateHref
+      : null;
 
     crumbs.push({ label, href });
   });
@@ -562,7 +587,7 @@ export function AppShell({
                 const isLast = index === breadcrumbs.length - 1;
 
                 return (
-                  <React.Fragment key={`${crumb.href}-${index}`}>
+                  <React.Fragment key={`${crumb.label}-${index}`}>
                     {index > 0 ? (
                       <ChevronRight
                         className="h-4 w-4 shrink-0 text-slate-400"
@@ -573,13 +598,17 @@ export function AppShell({
                       <span className="truncate font-semibold text-slate-900">
                         {crumb.label}
                       </span>
-                    ) : (
+                    ) : crumb.href ? (
                       <Link
                         href={crumb.href}
                         className="hidden truncate text-slate-500 transition-colors hover:text-teal-700 sm:inline"
                       >
                         {crumb.label}
                       </Link>
+                    ) : (
+                      <span className="hidden truncate text-slate-500 sm:inline">
+                        {crumb.label}
+                      </span>
                     )}
                   </React.Fragment>
                 );

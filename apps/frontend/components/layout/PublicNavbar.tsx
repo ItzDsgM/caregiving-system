@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -38,13 +38,68 @@ const PUBLIC_NAV_LINKS: NavLinkItem[] = [
   },
 ];
 
-export function PublicNavbar() {
+let clientTrackedPathname = '';
+const pathnameListeners = new Set<() => void>();
+
+function subscribeNoop(): () => void {
+  return () => {};
+}
+
+function getHydratedClientSnapshot(): boolean {
+  return true;
+}
+
+function getHydratedServerSnapshot(): boolean {
+  return false;
+}
+
+function subscribeTrackedPathname(listener: () => void): () => void {
+  pathnameListeners.add(listener);
+  return () => {
+    pathnameListeners.delete(listener);
+  };
+}
+
+function getTrackedPathnameSnapshot(): string {
+  return clientTrackedPathname;
+}
+
+function getTrackedPathnameServerSnapshot(): string {
+  return '';
+}
+
+function ClientPathnameObserver() {
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (clientTrackedPathname !== pathname) {
+      clientTrackedPathname = pathname;
+      for (const listener of pathnameListeners) {
+        listener();
+      }
+    }
+  }, [pathname]);
+
+  return null;
+}
+
+export function PublicNavbar() {
+  const isHydrated = useSyncExternalStore(
+    subscribeNoop,
+    getHydratedClientSnapshot,
+    getHydratedServerSnapshot,
+  );
+  const activePathname = useSyncExternalStore(
+    subscribeTrackedPathname,
+    getTrackedPathnameSnapshot,
+    getTrackedPathnameServerSnapshot,
+  );
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const isMobileMenuOpen = mobileMenuPath === pathname;
+  const isMobileMenuOpen =
+    mobileMenuPath !== null && mobileMenuPath === activePathname;
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -69,6 +124,7 @@ export function PublicNavbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+      {isHydrated ? <ClientPathnameObserver /> : null}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
@@ -92,9 +148,9 @@ export function PublicNavbar() {
           className="hidden items-center gap-1 md:flex"
         >
           {PUBLIC_NAV_LINKS.map((item) => {
-            const isActive = item.matchPrefix
-              ? pathname.startsWith(item.matchPrefix)
-              : false;
+            const isActive =
+              Boolean(item.matchPrefix && activePathname) &&
+              activePathname.startsWith(item.matchPrefix!);
 
             return (
               <Link
@@ -163,7 +219,7 @@ export function PublicNavbar() {
         <button
           type="button"
           onClick={() =>
-            setMobileMenuPath(isMobileMenuOpen ? null : pathname)
+            setMobileMenuPath(isMobileMenuOpen ? null : activePathname)
           }
           aria-expanded={isMobileMenuOpen}
           aria-controls="public-mobile-menu"
@@ -188,9 +244,9 @@ export function PublicNavbar() {
             className="flex flex-col gap-1"
           >
             {PUBLIC_NAV_LINKS.map((item) => {
-              const isActive = item.matchPrefix
-                ? pathname.startsWith(item.matchPrefix)
-                : false;
+              const isActive =
+                Boolean(item.matchPrefix && activePathname) &&
+                activePathname.startsWith(item.matchPrefix!);
 
               return (
                 <Link
