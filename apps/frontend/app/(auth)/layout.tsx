@@ -1,13 +1,6 @@
 import React, { Suspense } from 'react';
 import { AuthLayoutShell } from '@/components/layout/AuthLayoutShell';
-
-function AuthShellFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-teal-600" />
-    </div>
-  );
-}
+import { AuthSplitPageSkeleton } from '@/components/ui/PageSkeletons';
 
 export default function AuthGroupLayout({
   children,
@@ -15,7 +8,7 @@ export default function AuthGroupLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={<AuthShellFallback />}>
+    <Suspense fallback={<AuthSplitPageSkeleton />}>
       <AuthLayoutShell>{children}</AuthLayoutShell>
     </Suspense>
   );

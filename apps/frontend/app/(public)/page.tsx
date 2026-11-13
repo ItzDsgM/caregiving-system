@@ -16,6 +16,10 @@ import {
 import { HeroSearchPill } from "@/components/public/HeroSearchPill";
 import { LandingLiveMetrics } from "@/components/public/LandingLiveMetrics";
 import { BadgeVerified } from "@/components/ui/BadgeVerified";
+import {
+  LandingPageSkeleton,
+  PageSkeletonTransition,
+} from "@/components/ui/PageSkeletons";
 import { RatingStars } from "@/components/ui/RatingStars";
 import {
   CARE_SPECIALTY_DESCRIPTIONS,
@@ -117,6 +121,7 @@ const TRUST_TESTIMONIALS = [
 
 export default function LandingPage() {
   return (
+    <PageSkeletonTransition skeleton={<LandingPageSkeleton />}>
     <div>
       {/* 1. Hero Split */}
       <section className="border-b border-slate-200 bg-white">
@@ -432,5 +437,6 @@ export default function LandingPage() {
         </div>
       </section>
     </div>
+    </PageSkeletonTransition>
   );
 }

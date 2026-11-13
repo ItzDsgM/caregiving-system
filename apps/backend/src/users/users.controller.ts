@@ -1,8 +1,11 @@
 import {
   Controller,
+  Delete,
   Get,
   Patch,
   Body,
+  HttpCode,
+  HttpStatus,
   UseGuards,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -137,5 +140,51 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<User> {
     return this.usersService.update(currentUser.id, updateUserDto);
+  }
+
+  /**
+   * Permanently deletes the currently authenticated user account and cascades related records.
+   *
+   * @param currentUser - Injected user entity resolved from Bearer token.
+   * @returns Confirmation message upon successful deletion.
+   */
+  @Delete('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Permanently delete the currently authenticated user account' })
+  @ApiResponse({
+    status: 200,
+    description: 'User account permanently deleted',
+    schema: {
+      example: {
+        message: 'User account has been permanently deleted',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access token missing or expired',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/users/me',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User account not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'User with ID "3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b" was not found',
+        timestamp: '2026-10-12T20:00:00.000Z',
+        path: '/api/v1/users/me',
+      },
+    },
+  })
+  async deleteProfile(@CurrentUser() currentUser: User): Promise<{ message: string }> {
+    return this.usersService.remove(currentUser.id);
   }
 }

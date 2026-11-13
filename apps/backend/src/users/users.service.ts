@@ -122,6 +122,19 @@ export class UsersService {
   }
 
   /**
+   * Permanently deletes an existing user account and cascades related records.
+   *
+   * @param id - Unique UUID string of the user to delete.
+   * @returns Confirmation message upon successful deletion.
+   * @throws NotFoundException If no user exists with the specified UUID.
+   */
+  async remove(id: string): Promise<{ message: string }> {
+    const user = await this.findById(id);
+    await this.usersRepository.remove(user);
+    return { message: 'User account has been permanently deleted' };
+  }
+
+  /**
    * Directly saves or updates an existing User entity instance.
    *
    * @param user - User entity instance to save.

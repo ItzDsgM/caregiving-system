@@ -25,6 +25,10 @@ import {
   toNullableNumeric,
 } from '@/lib/format';
 import { Button, buttonVariants } from '@/components/ui/Button';
+import {
+  FormCardSkeleton,
+  PageSkeletonTransition,
+} from '@/components/ui/PageSkeletons';
 import { SchedulePicker } from '@/components/ui/SchedulePicker';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/ToastRegion';
@@ -185,6 +189,7 @@ export function CreateOfferView() {
   const scheduleError = getFieldError('requiredSchedule');
 
   return (
+    <PageSkeletonTransition skeleton={<FormCardSkeleton withPreview />}>
     <div className="mx-auto max-w-6xl space-y-6">
       <ClientPageHeader
         backHref="/client/offers"
@@ -717,5 +722,6 @@ export function CreateOfferView() {
         </aside>
       </div>
     </div>
+    </PageSkeletonTransition>
   );
 }

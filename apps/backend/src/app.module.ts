@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { resolve } from 'node:path';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -30,7 +31,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', resolve(__dirname, '../../../.env')],
     }),
     EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
@@ -56,7 +57,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
               port: parseInt(configService.get<string>('DB_PORT', '5432'), 10),
               username: configService.get<string>('DB_USERNAME', 'postgres'),
               password: configService.get<string>('DB_PASSWORD', 'postgres'),
-              database: configService.get<string>('DB_DATABASE', 'caregiving_db'),
+              database: configService.get<string>('DB_DATABASE', 'careconnect_db'),
               ssl: isSsl ? { rejectUnauthorized: false } : false,
             };
 

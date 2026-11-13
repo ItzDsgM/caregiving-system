@@ -223,10 +223,20 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   border-radius: 9999px;
   background-color: #0d9488;
+}
+
+.cc-tabs-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.cc-tabs-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* CSS Subgrid helpers for catalog & role selection cards */

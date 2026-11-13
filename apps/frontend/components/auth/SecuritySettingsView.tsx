@@ -5,22 +5,23 @@ import Image from 'next/image';
 import QRCode from 'qrcode';
 import {
   AlertCircle,
+  AlertTriangle,
   Check,
   CheckCircle2,
   Copy,
   KeyRound,
-  Loader2,
   LogOut,
   QrCode,
   ShieldCheck,
   ShieldOff,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ModalDialog } from '@/components/ui/ModalDialog';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/ToastRegion';
 import { ApiError, authApi, usersApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { clearStoredAuthSession, useAuth } from '@/lib/auth';
 import { USER_ROLE_LABELS } from '@/lib/constants';
 import { formatFullName } from '@/lib/format';
 import { OtpCodeInput } from './OtpCodeInput';
@@ -56,6 +57,11 @@ export function SecuritySettingsView() {
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     let active = true;
 
@@ -79,9 +85,12 @@ export function SecuritySettingsView() {
     return () => {
       active = false;
       setDisableModalOpen(false);
+      setDeleteModalOpen(false);
       setSetupData(null);
       setEnableCode('');
       setDisableCode('');
+      setDeleteConfirmText('');
+      setDeleteError(null);
     };
   }, [setUser]);
 
@@ -257,6 +266,125 @@ export function SecuritySettingsView() {
     await logout();
   };
 
+  const handleOpenDeleteModal = () => {
+    setDeleteConfirmText('');
+    setDeleteError(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isDeleting) return;
+    setDeleteModalOpen(false);
+    setDeleteConfirmText('');
+    setDeleteError(null);
+  };
+
+  const handleDeleteAccount = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isDeleting || deleteConfirmText.trim() !== 'ELIMINAR') return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await usersApi.deleteMe();
+      clearStoredAuthSession();
+      setUser(null);
+      toast.success(
+        'Cuenta eliminada',
+        'Tu cuenta de CareConnect fue eliminada permanentemente.',
+      );
+      if (typeof window !== 'undefined') {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload clears cached Next 16 Activity state on account deletion
+        window.location.assign('/login');
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setDeleteError(err.message);
+      } else {
+        setDeleteError(
+          'No pudimos eliminar tu cuenta en este momento. Intenta nuevamente.',
+        );
+      }
+      setIsDeleting(false);
+    }
+  };
+
+  if (isHydratingMe && !user) {
+    return (
+      <div
+        aria-busy="true"
+        aria-label="Cargando configuración de seguridad"
+        className="mx-auto max-w-2xl animate-pulse space-y-6"
+      >
+        <header className="space-y-2">
+          <div className="h-7 w-72 rounded-[8px] bg-slate-200" />
+          <div className="h-4 w-full max-w-md rounded-[6px] bg-slate-100" />
+        </header>
+
+        {/* Skeleton Card 1: 2FA */}
+        <section className="rounded-[12px] border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-[10px] bg-slate-200" />
+              <div className="space-y-2">
+                <div className="h-5 w-52 rounded-[6px] bg-slate-200" />
+                <div className="h-4 w-64 rounded-[6px] bg-slate-100" />
+              </div>
+            </div>
+            <div className="h-6 w-20 rounded-full bg-slate-200" />
+          </div>
+          <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
+            <div className="space-y-2">
+              <div className="h-4 w-60 rounded-[6px] bg-slate-200" />
+              <div className="h-3.5 w-72 rounded-[6px] bg-slate-100" />
+            </div>
+            <div className="h-10 w-32 shrink-0 rounded-[8px] bg-slate-200" />
+          </div>
+        </section>
+
+        {/* Skeleton Card 2: Session summary */}
+        <section className="rounded-[12px] border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-2">
+              <div className="h-5 w-56 rounded-[6px] bg-slate-200" />
+              <div className="h-4 w-72 rounded-[6px] bg-slate-100" />
+            </div>
+            <div className="h-5 w-16 rounded-full bg-slate-200" />
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 rounded-[10px] border border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <div className="h-3 w-14 rounded bg-slate-200" />
+              <div className="h-4 w-28 rounded bg-slate-200" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="h-3 w-14 rounded bg-slate-200" />
+              <div className="h-4 w-36 rounded bg-slate-200" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="h-3 w-10 rounded bg-slate-200" />
+              <div className="h-4 w-20 rounded bg-slate-200" />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <div className="h-10 w-32 rounded-[8px] bg-slate-200" />
+          </div>
+        </section>
+
+        {/* Skeleton Card 3: Danger zone */}
+        <section className="rounded-[12px] border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <div className="h-5 w-48 rounded-[6px] bg-slate-200" />
+              <div className="h-4 w-80 max-w-full rounded-[6px] bg-slate-100" />
+            </div>
+            <div className="h-10 w-36 shrink-0 rounded-[8px] bg-slate-200" />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
@@ -297,18 +425,11 @@ export function SecuritySettingsView() {
             </div>
           </div>
 
-          {isHydratingMe && !user ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              Verificando...
-            </span>
-          ) : (
-            <StatusBadge
-              status={isTwoFactorEnabled ? 'TWO_FACTOR_ON' : 'TWO_FACTOR_OFF'}
-              label={isTwoFactorEnabled ? 'Activo' : 'Inactivo'}
-              size="md"
-            />
-          )}
+          <StatusBadge
+            status={isTwoFactorEnabled ? 'TWO_FACTOR_ON' : 'TWO_FACTOR_OFF'}
+            label={isTwoFactorEnabled ? 'Activo' : 'Inactivo'}
+            size="md"
+          />
         </div>
 
         <div className="mt-6 border-t border-slate-100 pt-5">
@@ -535,6 +656,41 @@ export function SecuritySettingsView() {
         </div>
       </section>
 
+      {/* Card 3: Danger Zone — Permanent Account Deletion */}
+      <section
+        id="eliminar-cuenta"
+        className="scroll-mt-24 rounded-[12px] border border-rose-200 bg-white p-6 shadow-xs"
+      >
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-rose-50 text-rose-600">
+              <AlertTriangle className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h2 className="text-base font-semibold text-rose-900">
+                Zona de peligro — Eliminar cuenta
+              </h2>
+              <p className="mt-0.5 text-sm leading-5 text-slate-600">
+                Esta acción es irreversible. Se eliminarán permanentemente tu
+                perfil, credenciales de acceso, ofertas, postulaciones,
+                documentos y sesiones activas.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="danger-outline"
+            size="md"
+            onClick={handleOpenDeleteModal}
+            leftIcon={<Trash2 className="h-4 w-4" aria-hidden />}
+            className="shrink-0"
+          >
+            Eliminar mi cuenta
+          </Button>
+        </div>
+      </section>
+
       <ModalDialog
         open={disableModalOpen}
         onClose={handleCloseDisableModal}
@@ -589,6 +745,82 @@ export function SecuritySettingsView() {
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span>{disableError}</span>
+            </div>
+          ) : null}
+        </form>
+      </ModalDialog>
+
+      <ModalDialog
+        open={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        title="Eliminar cuenta permanentemente"
+        description="Esta acción no se puede deshacer y borrará toda tu información de CareConnect."
+        size="sm"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isDeleting}
+              onClick={handleCloseDeleteModal}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="delete-account-form"
+              variant="danger"
+              disabled={deleteConfirmText.trim() !== 'ELIMINAR' || isDeleting}
+              loading={isDeleting}
+              loadingText="Eliminando cuenta..."
+            >
+              Eliminar cuenta definitivamente
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="delete-account-form"
+          noValidate
+          onSubmit={handleDeleteAccount}
+          className="space-y-4"
+        >
+          <div className="rounded-[10px] border border-rose-200 bg-rose-50/80 p-3.5 text-xs leading-5 text-rose-800">
+            Al confirmar, perderás acceso inmediato a tu cuenta y se eliminarán
+            tus datos personales, perfil, credenciales, ofertas, postulaciones,
+            documentos y sesiones activas.
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="delete-account-confirm-input"
+              className="block text-xs font-semibold text-slate-700"
+            >
+              Escribe <span className="font-mono text-rose-700">ELIMINAR</span>{' '}
+              para confirmar
+            </label>
+            <input
+              id="delete-account-confirm-input"
+              type="text"
+              autoComplete="off"
+              disabled={isDeleting}
+              value={deleteConfirmText}
+              onChange={(event) => {
+                setDeleteConfirmText(event.target.value);
+                if (deleteError) setDeleteError(null);
+              }}
+              placeholder="ELIMINAR"
+              className="h-10 w-full rounded-[8px] border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:bg-slate-50"
+            />
+          </div>
+
+          {deleteError ? (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-[8px] border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <span>{deleteError}</span>
             </div>
           ) : null}
         </form>

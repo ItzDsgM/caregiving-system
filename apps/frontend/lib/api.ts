@@ -346,6 +346,11 @@ export const usersApi = {
       method: "PATCH",
       body: payload,
     }),
+
+  deleteMe: () =>
+    fetchFromApi<MessageResponse>("/users/me", {
+      method: "DELETE",
+    }),
 };
 
 export const caregiversApi = {
@@ -379,13 +384,14 @@ export const caregiversApi = {
       body: payload,
     }),
 
-  uploadDocument: (file: File, documentType: DocumentType) => {
+  uploadDocument: (file: File, documentType: DocumentType, token?: string | null) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("documentType", documentType);
     return fetchFromApi<CaregiverDocument>("/caregivers/me/documents", {
       method: "POST",
       body: formData,
+      token,
     });
   },
 

@@ -8,6 +8,10 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react';
+import {
+  PageSkeletonTransition,
+  RoleSelectorSkeleton,
+} from '@/components/ui/PageSkeletons';
 
 export const metadata: Metadata = {
   title: 'Crear cuenta',
@@ -69,6 +73,7 @@ const ROLE_OPTIONS: RoleOptionCard[] = [
 
 export default function RegisterRoleSelectorPage() {
   return (
+    <PageSkeletonTransition skeleton={<RoleSelectorSkeleton />}>
     <div className="mx-auto w-full max-w-3xl space-y-8">
       {/* Minimal header aligned with Design_rules A1 */}
       <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
@@ -158,5 +163,6 @@ export default function RegisterRoleSelectorPage() {
         })}
       </div>
     </div>
+    </PageSkeletonTransition>
   );
 }

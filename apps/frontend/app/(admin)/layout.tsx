@@ -1,13 +1,6 @@
 import React, { Suspense } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-
-function PortalShellFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-teal-600" />
-    </div>
-  );
-}
+import { PortalShellSkeleton } from '@/components/ui/PageSkeletons';
 
 export default function AdminGroupLayout({
   children,
@@ -15,7 +8,7 @@ export default function AdminGroupLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={<PortalShellFallback />}>
+    <Suspense fallback={<PortalShellSkeleton />}>
       <AppShell expectedRole="ADMIN">{children}</AppShell>
     </Suspense>
   );

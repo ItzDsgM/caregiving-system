@@ -90,7 +90,7 @@ export function TabsBar<T extends string = string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`flex items-center gap-1 overflow-x-auto border-b border-slate-200 ${className}`}
+      className={`cc-tabs-scroll flex items-center gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200 ${className}`}
     >
       {tabs.map((tab, index) => {
         const isSelected = tab.id === activeTab;

@@ -16,6 +16,7 @@ describe('UsersService', () => {
       create: jest.fn().mockImplementation((dto) => dto as User),
       save: jest.fn().mockImplementation(async (user) => user as User),
       findOne: jest.fn(),
+      remove: jest.fn().mockImplementation(async (user) => user as User),
       createQueryBuilder: jest.fn(),
     };
 
@@ -212,6 +213,37 @@ describe('UsersService', () => {
         NotFoundException,
       );
       expect(usersRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove an existing user and return confirmation message', async () => {
+      const existingUser = {
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      } as User;
+
+      (usersRepository.findOne as jest.Mock).mockResolvedValue(existingUser);
+
+      const result = await usersService.remove('user-uuid-1');
+
+      expect(usersRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'user-uuid-1' },
+        relations: { caregiverProfile: true },
+      });
+      expect(usersRepository.remove).toHaveBeenCalledWith(existingUser);
+      expect(result).toEqual({
+        message: 'User account has been permanently deleted',
+      });
+    });
+
+    it('should throw NotFoundException when removing an unknown user', async () => {
+      (usersRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(usersService.remove('missing-id')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(usersRepository.remove).not.toHaveBeenCalled();
     });
   });
 });

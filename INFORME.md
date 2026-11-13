@@ -27,7 +27,7 @@ El sistema implementado, denominado **CareConnect**, resuelve de forma integral 
 | :--- | :---: | :---: | :--- |
 | **Github Actions (CI)** | Requisito | **100%** | Pipeline `.github/workflows/ci.yml` ejecutado en cada `push` y `pull_request` (pruebas unitarias, linting, compilación, E2E y Newman). |
 | **Swagger en Endpoints**| Requisito | **100%** | OpenAPI 3.0 configurado en `/api/v1/docs` con esquema JWT Bearer y anotaciones en el 100% de los endpoints. |
-| **Seed de Datos** | **5%** | **100%** | Script CLI `bun run seed` y endpoint administrativo `POST /api/v1/admin/seed` que alimentan la base de datos con admin, cuidadores, clientes, ofertas, postulaciones y reseñas. |
+| **Seed de Datos** | **5%** | **100%** | Script CLI `bun --filter backend seed` y endpoint administrativo `POST /api/v1/admin/seed` que alimentan la base de datos con admin, cuidadores, clientes, ofertas, postulaciones y reseñas. |
 | **Autenticación (JWT + 2FA)** | **5%** | **100%** | JWT firmado con `@nestjs/jwt`, 2FA basado en TOTP RFC 6238 (`/auth/2fa/*`), login, inicio y cierre de sesión (`POST /auth/logout`) con revocación temporal de tokens. |
 | **Autorización (RBAC)** | **5%** | **100%** | 3 roles (`ADMIN`, `CAREGIVER`, `CLIENT`) protegidos con `@Roles()` y `RolesGuard`. Asignación administrativa de roles en `PATCH /api/v1/admin/users/:id/role`. |
 | **Pruebas (Jest + Supertest)** | **25%** | **100%** | 32 suites unitarias en Jest, pruebas de integración E2E con Supertest (`app.e2e-spec.ts`). Cobertura de código superior al **98.7%** (>80% exigido). |
@@ -303,20 +303,23 @@ Ubicación: `.github/workflows/deploy.yml`
    ```bash
    cp .env.example .env
    ```
+   El archivo `.env` va en la raíz del repositorio. Docker Compose lo usa directamente y el backend también lo carga al ejecutarse localmente; `apps/backend/.env` es opcional para sobrescribir valores del backend.
 
 4. **Levantar base de datos PostgreSQL local en Docker:**
    ```bash
    docker compose up -d postgres
+   docker compose ps postgres
    ```
+   Por defecto se crea `careconnect_db` con el usuario y contraseña `postgres`, expuesta en el puerto `5432`. Los datos se guardan en el volumen Docker `caregiving-system_postgres_data` y no en una carpeta del proyecto. `docker compose down` conserva el volumen; `docker compose down -v` lo elimina.
 
 5. **Alimentar la base de datos con datos de prueba (Seed):**
    ```bash
-   bun run seed
+   bun --filter backend seed
    ```
 
 6. **Iniciar el servidor en modo desarrollo:**
    ```bash
-   bun run start:dev
+   bun run dev:backend
    ```
 
 7. **Ejecutar las pruebas unitarias y de cobertura:**

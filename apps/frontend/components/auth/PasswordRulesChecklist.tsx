@@ -13,8 +13,7 @@ export interface PasswordRulesChecklistProps {
 
 /**
  * Displays password complexity rules above the password input.
- * Preserves its vertical space with `visibility: hidden` once all rules pass
- * so mobile keyboards never cover it and no layout shift occurs.
+ * Remains permanently visible so users always see each rule's verification state.
  */
 export function PasswordRulesChecklist({
   password,
@@ -25,15 +24,10 @@ export function PasswordRulesChecklist({
     passed: rule.test(password),
   }));
 
-  const allPassed = results.every((rule) => rule.passed);
-
   return (
     <div
       id={id}
-      aria-hidden={allPassed || undefined}
-      className={`mb-2 rounded-[8px] border border-slate-200 bg-slate-50/80 px-3 py-2.5 transition-opacity duration-150 ${
-        allPassed ? 'invisible opacity-0' : 'visible opacity-100'
-      }`}
+      className="mb-2 rounded-[8px] border border-slate-200 bg-slate-50/80 px-3 py-2.5"
     >
       <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
         Requisitos de contraseña

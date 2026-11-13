@@ -16,7 +16,7 @@ CareConnect is a robust, enterprise-grade RESTful backend application built with
 - **Role-Based Access Control (RBAC):** Distinct permissions for `CAREGIVER`, `CLIENT`, and `ADMIN` enforced via `@Roles()` decorators and `RolesGuard`, with dynamic admin role assignment (`PATCH /admin/users/:id/role`).
 - **Two-Factor Authentication (2FA / TOTP):** RFC 6238 time-based one-time password system (`/auth/2fa/*`) compatible with Google Authenticator and Authy.
 - **Active Session Logout:** JWT token invalidation via `POST /auth/logout` and timestamp checks in `JwtStrategy`.
-- **Database Seeding Engine:** CLI script (`bun run seed`) and admin endpoint (`POST /admin/seed`) feeding realistic caregivers, clients, offers, applications, and reviews.
+- **Database Seeding Engine:** CLI script (`bun --filter backend seed`) and admin endpoint (`POST /admin/seed`) feeding realistic caregivers, clients, offers, applications, and reviews.
 - **Privacy Unlocking Model:** Caregiver contact details (phone, email, WhatsApp) remain masked until mutual acceptance.
 - **Document Audit Engine:** Secure uploads for identity documents and background checks, verified by administrators to grant trust badges.
 - **Atomic Reputation & Ratings:** 1–5 star client reviews calculate weighted average ratings atomically via TypeORM `QueryRunner` transactions.
@@ -57,7 +57,7 @@ bun install
 ```
 
 ### 2. Environment Configuration
-Create a `.env` file based on `.env.example`:
+Create a root `.env` file based on `.env.example`. Docker Compose reads this file from the repository root, and the backend also loads it when run locally. An optional `apps/backend/.env` takes precedence for backend-only overrides:
 ```bash
 cp .env.example .env
 ```
@@ -65,17 +65,19 @@ cp .env.example .env
 ### 3. Start Database
 ```bash
 docker compose up -d postgres
+docker compose ps postgres
 ```
+This starts only PostgreSQL. By default it creates the `careconnect_db` database with user/password `postgres`/`postgres` on port `5432`; its data lives in the named `caregiving-system_postgres_data` Docker volume, not in a project folder. `docker compose down` keeps that data; `docker compose down -v` deletes it.
 
 ### 4. Feed Initial Database Records (Seed)
 ```bash
-bun run seed
+bun --filter backend seed
 ```
 This seeds the initial Super Admin (`admin@careconnect.com` / `AdminSecret123!`), sample caregivers, clients, job offers, applications, and reviews.
 
 ### 5. Run the Development Server
 ```bash
-bun run start:dev
+bun run dev:backend
 ```
 The application will start at `http://localhost:3000`.  
 Explore the interactive Swagger documentation at **`http://localhost:3000/api/v1/docs`**.

@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { PublicPageSkeleton } from '@/components/ui/PageSkeletons';
 
 function NavbarFallback() {
   return (
@@ -9,11 +10,7 @@ function NavbarFallback() {
 }
 
 function PublicContentFallback() {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="h-40 animate-pulse rounded-[12px] border border-slate-200 bg-white" />
-    </div>
-  );
+  return <PublicPageSkeleton />;
 }
 
 export default function PublicGroupLayout({

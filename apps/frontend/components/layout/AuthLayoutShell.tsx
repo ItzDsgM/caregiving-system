@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,6 +10,11 @@ import {
   Lock,
   ShieldCheck,
 } from 'lucide-react';
+import { AuthFormSkeleton } from '@/components/auth/AuthFormSkeleton';
+import {
+  AuthSplitPageSkeleton,
+  RoleSelectorSkeleton,
+} from '@/components/ui/PageSkeletons';
 
 interface SplitMessaging {
   badge: string;
@@ -64,6 +69,19 @@ export function AuthLayoutShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
+  const [readyPath, setReadyPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setReadyPath(pathname);
+    }, 200);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [pathname]);
+
+  const showSkeleton = readyPath !== pathname;
 
   const useSplitLayout =
     pathname === '/login' ||
@@ -71,6 +89,10 @@ export function AuthLayoutShell({
     pathname.startsWith('/register/caregiver');
 
   if (useSplitLayout) {
+    if (showSkeleton) {
+      return <AuthSplitPageSkeleton />;
+    }
+
     const messaging = getSplitMessaging(pathname);
 
     return (
@@ -190,7 +212,11 @@ export function AuthLayoutShell({
           isWideChooser ? 'max-w-3xl' : 'max-w-md'
         }`}
       >
-        {children}
+        {showSkeleton
+          ? isWideChooser
+            ? <RoleSelectorSkeleton />
+            : <AuthFormSkeleton />
+          : children}
       </main>
 
       <footer className="mx-auto w-full max-w-4xl text-center text-xs text-slate-500">
