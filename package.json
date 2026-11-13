@@ -20,6 +20,8 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "prod:backend": "bun --filter backend start:prod",
+    "prod:frontend": "bun --filter frontend start:prod"
   }
 }
