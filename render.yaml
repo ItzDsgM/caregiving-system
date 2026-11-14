@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: careconnect-backend
+    runtime: node
+    plan: free
+    buildCommand: bun install --frozen-lockfile && bun run build:backend
+    startCommand: bun run prod:backend
+    healthCheckPath: /api/v1/docs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNCHRONIZE
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: ADMIN_EMAIL
+        value: admin@careconnect.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_AUTO_SEED
+        value: "true"
+
+  - type: web
+    name: careconnect-frontend
+    runtime: node
+    plan: free
+    buildCommand: bun install --frozen-lockfile && bun run build:frontend
+    startCommand: bun run prod:frontend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

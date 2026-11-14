@@ -40,8 +40,12 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
         const dbSsl = configService.get<string>('DB_SSL');
+        const requiresSslInUrl =
+          databaseUrl != null &&
+          /sslmode=(require|verify-ca|verify-full)/i.test(databaseUrl);
         const isSsl =
           dbSsl === 'true' ||
+          requiresSslInUrl ||
           (dbSsl !== 'false' &&
             databaseUrl != null &&
             !databaseUrl.includes('localhost') &&

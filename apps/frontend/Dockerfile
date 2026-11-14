@@ -14,6 +14,7 @@ COPY proxy.ts ./proxy.ts
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_OUTPUT_STANDALONE=true
 
 RUN bun run build
 
